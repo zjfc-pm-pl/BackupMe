@@ -28,6 +28,11 @@ use function file_exists;
 use const DIRECTORY_SEPERATOR;
 
 final class BackupMe extends \pocketmine\plugin\PluginBase {
+
+	public function onLoad() : void {
+		require 'libs/vendor/autoload.php';
+		return;
+	}
 	
 	public function onEnable() : void {
 		if (!$this->initConfig()) return;

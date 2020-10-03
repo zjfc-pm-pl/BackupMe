@@ -24,6 +24,9 @@ namespace Endermanbugzjfc\BackupMe\events;
 class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent {
 
 	protected $request;
+	protected $start;
+	protected $files;
+	protected $ignored;
 
 	public function __construct(BackupRequest $e) {
 		$this->request = $e;
@@ -31,5 +34,32 @@ class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent {
 
 	public function getRequest() : BackupRequest {
 		return $this->request;
+	}
+
+	public function setStartTime(float $time) : BackupStopEvent {
+		$this->start = $time;
+		return $this;
+	}
+
+	public function getStartTime() : ?float {
+		return $this->start;
+	}
+
+	public function setTotalFileAdded(int $amount) : BackupStopEvent {
+		$this->files = $amount;
+		return $this;
+	}
+
+	public function getTotalFileAdded() : ?int {
+		return $this->files;
+	}
+
+	public function setTotalFileIgnored(int $amount) : BackupStopEvent {
+		$this->ignored = $amount;
+		return $this;
+	}
+
+	public function getTotalFileIgnored() : ?int {
+		return $this->ignored;
 	}
 }
