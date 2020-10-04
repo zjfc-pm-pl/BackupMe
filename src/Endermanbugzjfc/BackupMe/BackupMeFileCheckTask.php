@@ -21,6 +21,8 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
+use pocketmine\plugin\Plugin;
+
 use function file_exists;
 
 class BackupMeFileCheckTask extends \pocketmine\scheduler\Task {
@@ -29,16 +31,24 @@ class BackupMeFileCheckTask extends \pocketmine\scheduler\Task {
 	protected $path;
 	protected $paused = false;
 
-	public function __construct(\pocketmine\plugin\Plugin $main, string $path) {
+	public function __construct(Plugin $main, string $path) {
 		$this->main = $main;
 		$this->path = $path;
 	}
 
 	final public function onRun(int $ct) : void {
 		if ($this->isPaused()) return;
-		if (!file_exists($path . 'backup.me')) return;
-		(new events\BackupRequestByPluginEvent($this->main))->call();
+		if (!file_exists($this->getPath() . 'backup.me')) return;
+		(new events\BackupRequestByPluginEvent($this->getPlugin(), $this->getPath() . 'backup.me'))->call();
 		return;
+	}
+
+	public function getPath() : string {
+		return $this->path;
+	}
+
+	public function getPlugin() : Plugin {
+		return $this->main;
 	}
 
 	public function isPaused() : bool {

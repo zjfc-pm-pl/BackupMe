@@ -23,13 +23,16 @@ namespace Endermanbugzjfc\BackupMe;
 
 use function disk_free_space;
 use function disk_total_space;
+use function file_get_contents;
+use function file_exists;
+use function unlink;
+use function is_null;
 
 class BackupArchiver implements \pocketmine\event\Listener {
 
-	public const ARCHIVER_NONE = 0;
-	public const ARCHIVER_ZIP = 1;
-	public const ARCHIVER_TARGZ = 2;
-	public const ARCHIVER_TARBZ2 = 3;
+	public const ARCHIVER_ZIP = 0;
+	public const ARCHIVER_TARGZ = 1;
+	public const ARCHIVER_TARBZ2 = 2;
 
 	protected $main;
 	protected $checker;
@@ -48,18 +51,23 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		if ($e->isCancelled()) return;
 		$log = $e->getPlugin()->getLogger();
 		$log->info('Server backup requested...');
-		$log->info('Checking disk storage...');
-		if (($space = (int)disk_free_space($this->desk)) < ($total = (int)disk_total_space($this->source))) {
-			$log->emegancy('Disk space is not enough for a backup (' . round($space / 1024 / 1024, 0) . ' MB' . ' out of ' . round($total / 1024 / 1024, 0) . ' MB)');
+		$log->info('Checking disk space...');
+		if (($free = (int)disk_free_space($this->desk)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
+			$log->emergency('Disk space is not enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 			if (!$this->doIgnoreDiskSpace()) {
 				$log->critical('Abort backup task due to the lacking of disk space');
-				(new BackupAbortEvent($e, BackupAbortEvent::REASON_DISK_SPACE_LACK))->call();
+				(new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_DISK_SPACE_LACK))->call();
 				return;
 			}
 			$log->warning('>> !DISCLAIMER! << Not my fault if the backup file or the disk of your server is broken due to the lacking of disk space');
 		}
-		else $log->info('Disk space is enough for a backup (' . round($space / 1024 / 1024, 0) . ' MB' . ' out of ' . round($total / 1024 / 1024, 0) . ' MB)');
+		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
+		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->desk, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? file_get_contents($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') : null)));
+	}
+
+	public function stop(events\BackupStopEvent $e) : void {
+		if (!is_null($e->getRequest()->getBackupMeFilePath() ?? null)) @unlink($e->getRequest()->getBackupMeFilePath());
 	}
 
 	public function setChecker(BackupMeFileCheckTask $checker) : BackupArchiver {
@@ -101,19 +109,19 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		return $this->checker;
 	}
 
-	public function setSource() : ?string {
+	public function getSource() : ?string {
 		return $this->source;
 	}
 
-	public function setDesk() : ?string {
+	public function getDesk() : ?string {
 		return $this->desk;
 	}
 
-	public function setName() : ?string {
+	public function getName() : ?string {
 		return $this->name;
 	}
 
-	public function setFormat() : ?int {
+	public function getFormat() : ?int {
 		return $this->format;
 	}
 

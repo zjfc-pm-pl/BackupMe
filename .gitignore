@@ -2,3 +2,4 @@
 
 vendor/
 *.lock
+sftp-config*.json
