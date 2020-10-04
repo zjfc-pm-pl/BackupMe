@@ -63,7 +63,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
-		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->desk, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? file_get_contents($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') : null), (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
+		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->desk, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
