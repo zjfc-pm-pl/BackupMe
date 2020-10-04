@@ -66,7 +66,6 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$conf->set('dynamic-backup-ignore', (bool)($all['dynamic-backup-ignore'] ?? false));
 		$conf->set('check-for-file-interval', (int)($all['check-for-file-interval'] ?? 3));
 		$conf->set('ignore-disk-space', (bool)($all['ignore-disk-space'] ?? false));
-		$conf->set('archive-empty-dir', (bool)($all['archive-empty-dir'] ?? false));
 
 		$conf->save();
 		$conf->reload();

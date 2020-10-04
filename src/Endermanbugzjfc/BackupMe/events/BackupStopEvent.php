@@ -27,7 +27,6 @@ class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent {
 	protected $start;
 	protected $files;
 	protected $ignored;
-	protected $uuid;
 
 	public function __construct(BackupRequest $e) {
 		$this->request = $e;
@@ -62,9 +61,5 @@ class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent {
 
 	public function getTotalFileIgnored() : ?int {
 		return $this->ignored;
-	}
-
-	public function getBackupTaskUUID() : \pocketmine\utils\UUID {
-		return $this->uuid;
 	}
 }
