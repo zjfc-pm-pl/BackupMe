@@ -21,9 +21,9 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
-use pocketmine\{Server, plugin\Plugin};
+use pocketmine\{Server, plugin\Plugin, utils\UUID};
 
-use Inmarelibero\GitIgnoreChecker\Model\{RelativePath, Repository, GitIgnore\File};
+use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
 use function date;
 use function substr;
@@ -36,10 +36,15 @@ use function unserialize;
 use function mkdir;
 use function copy;
 use function unlink;
-use function rename;
-use function isdir;
+use function is_dir;
+use function file_get_contents;
+use function file_put_contents;
+use function explode;
+use function implode;
+use function strpos;
+use function str_ireplace;
 
-use const DIRECTORY_SEPERATOR;
+use const DIRECTORY_SEPARATOR;
 
 class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
@@ -47,7 +52,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected $desk;
 	protected $format;
 	protected $dynamicignore;
-	protected $backupignore;
+	protected $uuid;
+	protected $ignorefilepath;
 
 	protected const PROGRESS_FILE_ADDED = 0;
 	protected const PROGRESS_FILE_IGNORED = 1;
@@ -60,7 +66,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected const RESULT_EXCEPTION_ENCOUNTED_WHEN_CREATING_ARCHIVE_FILE = 1;
 	protected const RESULT_EXCEPTION_ENCOUNTED_WHEN_COMPRESSING = 2;
 
-	public function __construct(events\BackupRequest $request, string $source, string $desk, string $name, int $format, bool $dynamicignore, ?string $backupignore) {
+	public function __construct(events\BackupRequest $request, string $source, string $desk, string $name, int $format, bool $dynamicignore, ?string $ignorefilepath) {
 		$this->desk = $desk . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPERATOR : '') . self::replaceFileName($name, $format);
 		$this->source = $source;
 		$this->format = $format;
@@ -105,29 +111,15 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		}
 		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, (string)$this->desk]);
 		if (isset($this->ignorefilepath)) {
-			if (file_exists($this->source . '.gitignore')) {
-				if (file_exists($tmpdir = $this->source . 'backup-archive-task-tmp-' . $this->uuid . DIRECTORY_SEPARATOR)) $this->publicProgress([self::PROGRESS_FAILED_TO_CREATE_BACKUP_TASK_TMP_DIR, $tmpdir]);
-				else 
-					mkdir($tmpdir);
-					copy($this->source . '.gitignore', $tmpdir . '.gitignore');
-					$this->publishProgress([self::PROGRESS_COPIED_FILE_TO_BACKUP_TASK_TMP_DIR]);
-					@unlink($this->source . '.gitignore');
-				}
-			}
 			require 'libs/vendor/autoload.php';
-			var_dump(copy($this->ignorefilepath, $this->source . 'backupignore.gitignore'));
-			var_dump(rename($this->source . 'backupignore.gitignore', $this->source . '.gitignore'));
+			@copy($this->ignorefilepath, $this->source . '.gitignore');
+			@self::filterIgnoreFileComments($this->source . '.gitignore');
 			$ignore = (new GitIgnoreChecker($this->source));
-		// }
-		$result = $this->scanIn($arch, $ignore ?? null, $this->source, 0, 0, $tmpdir ?? null);
-		if (isset($tmpdir)) if (file_exists($tmpdir)) {
-			foreach (array_filter(scandir($tmpdir), function(string $dir) : bool {return !($dir === '.' or $dir === '..');}) as $dir) {
-				@unlink($this->source . basename($dir));
-				@copy($dir, $this->source . basename($dir));
-				$arch->addFile($this->source . basename($dir));
-				$this->publishProgress([self::PROGRESS_FOLE_ADDED, $this->source . basename($dir)]);
-			}
 		}
+		$ttfiles = 0;
+		$ttignored = 0;
+		$this->scanIn($arch, $ignore ?? null, $this->source, $ttfiles, $ttignored);
+		@unlink($this->source . '.gitignore');
 		$this->publishProgress([self::PROGRESS_COMPRESSING_ARCHIVE]);
 		try {
 			switch ($this->format) {
@@ -147,7 +139,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 			$this->setResult([self::RESULT_EXCEPTION_ENCOUNTED_WHEN_COMPRESSING, self::serializeException($ero), $time, $result[0], $result[1]]);
 			return;
 		}
-		$this->setResult([self::RESULT_SUCCESSED, $time, $result[0], $result[1]]);
+		$this->setResult([self::RESULT_SUCCESSED, $time, $ttfiles, $ttignored]);
 		return;
 	}
 
@@ -180,9 +172,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		return;
 	}
 
-	protected function scanIn($arch, ?GitIgnoreChecker $ignore, string $dir, int $ttfiles = 0, int $ttignored = 0, ?string $tmpdir) : array {
-		$dir = array_filter(scandir($dir), function(string $dir) : bool {return !($dir === '.' or $dir === '..');});
-		foreach ($dir as $dirorfile) {
+	protected function scanIn($arch, ?GitIgnoreChecker $ignore, string $dir, int &$ttfiles = 0, int &$ttignored = 0) : void {
+		$dirs = array_filter(scandir($dir), function(string $dir) : bool {return !($dir === '.' or $dir === '..');});
+		foreach ($dirs as $dirorfile) {
 			try {
 				switch (false) {
 					case is_dir($dirorfile):
@@ -202,22 +194,28 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 								continue 2;
 							}
 						}
-						if ($dirorfile === $this->source . '.gitignore') continue 2;
-						$arch->addFile($dirorfile);
+						if ($dirorfile === '.gitignore') continue 2;
+						$arch->addFile($dir . $dirorfile);
+						$this->publishProgress([self::PROGRESS_FILE_ADDED, (string)$dirorfile]);
 						break;
 					
 					case !is_dir($dirorfile):
-						if ($dirorfile === $tmpdir) continue 2;
-						$tmp = $this->scanIn($arch, $ignore, $dirorfile, $ttfiles, $ttignored, $tmpdir ?? null);
-						$ttfiles = $tmp[0];
-						$ttignored = $tmp[1];
+						$this->scanIn($arch, $ignore, $dir . $dirorfile . DIRECTORY_SEPARATOR, $ttfiles, $ttignored, $parentdir);
 						break;
 				}
-			} catch (\Exception $e) {
-				$this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
+			} catch (\Exception $ero) {
+				$this->worker->getLogger()->logException($ero);
+				// $this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
 			}
 		}
-		return [$ttfiles, $ttignored];
+		return;
+	}
+
+	protected static function filterIgnoreFileComments(string $ignorefilepath) : void {
+		file_put_contents($ignorefilepath, implode("\n", array_filter(explode("\n", file_get_contents($ignorefilepath)), function(string $line) : bool {
+			return str_ireplace(' ', '', substr($line, 0, $prefix)) !== '';
+		})));
+		return;
 	}
 
 	protected function doDynamicIgnore() : bool {
