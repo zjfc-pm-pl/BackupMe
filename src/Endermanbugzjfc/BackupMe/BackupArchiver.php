@@ -49,6 +49,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 
 	public function requestByPlugin(events\BackupRequestByPluginEvent $e) : void {
 		if ($e->isCancelled()) return;
+		$this->pauseChecker();
 		$log = $e->getPlugin()->getLogger();
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
@@ -68,6 +69,15 @@ class BackupArchiver implements \pocketmine\event\Listener {
 
 	public function stop(events\BackupStopEvent $e) : void {
 		if (!is_null($e->getRequest()->getBackupMeFilePath() ?? null)) @unlink($e->getRequest()->getBackupMeFilePath());
+		$this->resumeChecker();
+	}
+
+	protected function pauseChecker() : void {
+		$this->checker->pause();
+	}
+
+	protected function resumeChecker() : void {
+		$this->checker->resume();
 	}
 
 	public function setChecker(BackupMeFileCheckTask $checker) : BackupArchiver {

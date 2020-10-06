@@ -42,7 +42,7 @@ use function file_put_contents;
 use function explode;
 use function implode;
 use function strpos;
-use function str_ireplace;
+use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -64,10 +64,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 	protected const RESULT_SUCCESSED = 0;
 	protected const RESULT_EXCEPTION_ENCOUNTED_WHEN_CREATING_ARCHIVE_FILE = 1;
-	protected const RESULT_EXCEPTION_ENCOUNTED_WHEN_COMPRESSING = 2;
 
 	public function __construct(events\BackupRequest $request, string $source, string $desk, string $name, int $format, bool $dynamicignore, ?string $ignorefilepath) {
-		$this->desk = $desk . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPERATOR : '') . self::replaceFileName($name, $format);
+		$this->desk = $desk . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPERATOR : '') . self::replaceFileName($name, $format, $uuid = UUID::fromRandom()->toString());
 		$this->source = $source;
 		$this->format = $format;
 		if (!$dynamicignore) $dynamicignore = [];
@@ -77,7 +76,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 			!empty($request->getPlugin()->getServer()->getResourcePackManager()->getResourceStack())
 		];
 		$this->dynamicignore = serialize($dynamicignore);
-		$this->uuid = UUID::fromRandom()->toString();
+		$this->uuid = $uuid;
 		$this->ignorefilepath = $ignorefilepath;
 		$this->storeLocal($request);
 		return;
@@ -135,11 +134,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					$arch->compress(\Phar::BZ2);
 					break;
 			}
-		} catch (\Exception $ero) {
-			$this->setResult([self::RESULT_EXCEPTION_ENCOUNTED_WHEN_COMPRESSING, self::serializeException($ero), $time, $result[0], $result[1]]);
-			return;
-		}
-		$this->setResult([self::RESULT_SUCCESSED, $time, $ttfiles, $ttignored]);
+		} catch (\Exception $ero) {}
+		$this->setResult([self::RESULT_SUCCESSED, $time, $ttfiles, $ttignored, $self::serializeException($ero)]);
 		return;
 	}
 
@@ -176,10 +172,10 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$dirs = array_filter(scandir($dir), function(string $dir) : bool {return !($dir === '.' or $dir === '..');});
 		foreach ($dirs as $dirorfile) {
 			try {
-				switch (false) {
-					case is_dir($dirorfile):
-						if (($ignore instanceof GitIgnoreChecker) and ($ignore->isPathIgnored('/' . $dirorfile))) {
-							$this->publishProgress([self::PROGRESS_FILE_IGNORED, $dirorfile]);
+				switch (true) {
+					case (bool)(!is_dir($dir . $dirorfile)):
+						if (($ignore instanceof GitIgnoreChecker) and ($ignore->isPathIgnored(substr($dir, strlen($ignore->getRepository()->getPath())) . $dirorfile))) {
+							$this->publishProgress([self::PROGRESS_FILE_IGNORED, $dir . $dirorfile]);
 							continue 2;
 						}
 						if ($this->doDynamicIgnore()) {
@@ -190,22 +186,21 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 								((basename(dirname($dirorfile)) === 'resource_packs') and (!$envir[2]))
 							) {
 								$ttignored++;
-								$this->publishProgress([self::PROGRESS_FILE_AUTO_IGNORED, (string)$dirorfile]);
+								$this->publishProgress([self::PROGRESS_FILE_AUTO_IGNORED, $dir . $dirorfile]);
 								continue 2;
 							}
 						}
-						if ($dirorfile === '.gitignore') continue 2;
+						if ($dir . $dirorfile === $this->source . '.gitignore') continue 2;
 						$arch->addFile($dir . $dirorfile);
-						$this->publishProgress([self::PROGRESS_FILE_ADDED, (string)$dirorfile]);
+						$this->publishProgress([self::PROGRESS_FILE_ADDED, (string)$dir . $dirorfile]);
 						break;
 					
-					case !is_dir($dirorfile):
-						$this->scanIn($arch, $ignore, $dir . $dirorfile . DIRECTORY_SEPARATOR, $ttfiles, $ttignored, $parentdir);
+					case (bool)(is_dir($dir . $dirorfile)):
+						$this->scanIn($arch, $ignore, $dir . $dirorfile . DIRECTORY_SEPARATOR, $ttfiles, $ttignored);
 						break;
 				}
 			} catch (\Exception $ero) {
-				$this->worker->getLogger()->logException($ero);
-				// $this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
+				$this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
 			}
 		}
 		return;
@@ -213,7 +208,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 	protected static function filterIgnoreFileComments(string $ignorefilepath) : void {
 		file_put_contents($ignorefilepath, implode("\n", array_filter(explode("\n", file_get_contents($ignorefilepath)), function(string $line) : bool {
-			return str_ireplace(' ', '', substr($line, 0, $prefix)) !== '';
+			return strpos($line, '#') !== 0 and str_replace(' ', '', $line) !== '';
 		})));
 		return;
 	}
@@ -253,7 +248,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		return;
 	}
 
-	protected static function replaceFileName(string $name, int $format) : string {
+	protected static function replaceFileName(string $name, int $format, UUID $uuid) : string {
 		$name = str_replace('{y}', date('Y'), $name);
 		$name = str_replace('{m}', date('m'), $name);
 		$name = str_replace('{d}', date('d'), $name);
@@ -275,6 +270,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				break;
 		}
 		$name = str_replace('{format}', $format, $name);
+		$name = str_replace('{uuid}', $uuid->toString(), $name);
 		return $name;
 	}
 }
