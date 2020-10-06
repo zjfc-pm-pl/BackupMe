@@ -49,6 +49,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 
 	public function requestByPlugin(events\BackupRequestByPluginEvent $e) : void {
 		if ($e->isCancelled()) return;
+		$this->pauseChecker();
 		$log = $e->getPlugin()->getLogger();
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
@@ -63,11 +64,20 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
-		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->desk, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? file_get_contents($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') : null), (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
+		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->desk, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
 		if (!is_null($e->getRequest()->getBackupMeFilePath() ?? null)) @unlink($e->getRequest()->getBackupMeFilePath());
+		$this->resumeChecker();
+	}
+
+	protected function pauseChecker() : void {
+		$this->checker->pause();
+	}
+
+	protected function resumeChecker() : void {
+		$this->checker->resume();
 	}
 
 	public function setChecker(BackupMeFileCheckTask $checker) : BackupArchiver {
