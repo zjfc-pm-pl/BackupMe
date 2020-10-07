@@ -39,7 +39,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 	protected $main;
 	protected $checker;
 	protected $source;
-	protected $desk;
+	protected $dest;
 	protected $name = 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}';
 	protected $format = self::ARCHIVER_ZIP;
 	protected $dynamicignore = false;
@@ -56,7 +56,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		$log = $e->getPlugin()->getLogger();
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
-		if (($free = (int)disk_free_space($this->desk)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
+		if (($free = (int)disk_free_space($this->dest)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
 			$log->emergency('Disk space is not enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 			if (!$this->doIgnoreDiskSpace()) {
 				$log->critical('Abort backup task due to the lacking of disk space');
@@ -67,7 +67,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
-		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->desk, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
+		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->dest, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
@@ -117,8 +117,8 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		return $this;
 	}
 
-	public function setDesk(string $path) : BackupArchiver {
-		$this->desk = $path;
+	public function setDest(string $path) : BackupArchiver {
+		$this->dest = $path;
 		return $this;
 	}
 
@@ -150,8 +150,8 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		return $this->source;
 	}
 
-	public function getDesk() : ?string {
-		return $this->desk;
+	public function getDest() : ?string {
+		return $this->dest;
 	}
 
 	public function getName() : ?string {
