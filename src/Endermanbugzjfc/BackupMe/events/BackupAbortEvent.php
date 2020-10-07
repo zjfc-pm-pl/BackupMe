@@ -25,17 +25,24 @@ class BackupAbortEvent extends BackupStopEvent {
 
 	public const REASON_UNKNOWN = 0;
 	public const REASON_DISK_SPACE_LACK = 1;
-	public const REASON_EXECEPTION_ENCOUNTED = 2;
+	public const REASON_COMPRESS_FAILED = 2;
+	public const REASON_CANNOT_CREATE_ACHIVE_FILE = 3;
 
 	protected $reason = 0;
+	protected $exception;
 
-	public function __construct(BackupRequest $e, int $reason) {
-		$this->request = $e;
+	public function __construct(BackupRequest $e, ?\pocketmine\utils\UUID $uuid, int $reason, ?Throwable $ero) {
+		parent::__construct($e, $uuid ?? null, $reason, $ero ?? null);
 		$this->reason = $reason;
+		$this->exception = $ero;
 	}
 
 	public function getReason() : int {
 		return $this->reason;
+	}
+
+	public function getException() : ?\Throwable {
+		return $this->exception;
 	}
 
 }

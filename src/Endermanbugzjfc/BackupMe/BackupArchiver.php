@@ -27,6 +27,8 @@ use function file_get_contents;
 use function file_exists;
 use function unlink;
 use function is_null;
+use function round;
+use function microtime;
 
 class BackupArchiver implements \pocketmine\event\Listener {
 
@@ -50,6 +52,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 	public function requestByPlugin(events\BackupRequestByPluginEvent $e) : void {
 		if ($e->isCancelled()) return;
 		$this->pauseChecker();
+		$this->main->getLogger()->debug('File checker pasued');
 		$log = $e->getPlugin()->getLogger();
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
@@ -68,8 +71,32 @@ class BackupArchiver implements \pocketmine\event\Listener {
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
-		if (!is_null($e->getRequest()->getBackupMeFilePath() ?? null)) @unlink($e->getRequest()->getBackupMeFilePath());
+		if ($e->isCancelled()) return;
+		$log = $this->main->getLogger();
+		if (!is_null($file = ($e->getRequest()->getBackupMeFilePath() ?? null))) {
+			@unlink($file);
+			$log->debug('Deleted file "' . $file . '"');
+		}
+
+		if ($e instanceof events\BackupAbortEvent) {
+			var_dump(get_class($ero));
+			switch ($e->getReason()) {
+				case events\BackupAbortEvent::REASON_COMPRESS_FAILED:
+					$log->critical('>> !BACKUP FAILURED! << Exception encounted when compressing the backup archive file');
+					if (($ero = $e->getException()) instanceof \Throwable) $log->logException($ero);
+					break;
+
+				case events\BackupAbortEvent::REASON_CANNOT_CREATE_ACHIVE_FILE:
+					$log->emergency('>> !BACKUP FAILURED! << Exception encounted when creating the backup archive file');
+					if (($ero = $e->getException()) instanceof \Throwable) $log->logException($ero);
+					break;
+			}
+			return;
+		}
+
+		$log->notice('Backup task completed in ' . round(microtime(true) - $e->getStartTime(), 3) . ' seconds (' . $e->getTotalFileAdded() . ' files added, ' . $e->getTotalFileIgnored() . ' files ignored)');
 		$this->resumeChecker();
+		$log->debug('File checker resumed');
 	}
 
 	protected function pauseChecker() : void {

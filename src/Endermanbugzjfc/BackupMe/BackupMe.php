@@ -41,9 +41,9 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 				 ->setDesk((string)($this->getConfig()->get('backup-into', $this->getSafeServerDataPath())))
 				 ->setFormat((int)($this->getConfig()->get('archiver-format', BackupArchiver::ARCHIVER_ZIP)))
 				 ->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')))
-				 ->setDynamicIgnore((bool)($this->getConfig()->get('dynamic-backup-ignore', false)))
+				 ->setDynamicIgnore((bool)($this->getConfig()->get('smart-backup-ignorer', false)))
 				 ->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)));
-		$this->getScheduler()->scheduleRepeatingTask($checker, (int)$this->getConfig()->get('check-for-file-interval', 3) * 20);
+		$this->getScheduler()->scheduleRepeatingTask($checker, (int)$this->getConfig()->get('file-checker-interval', 3) * 20);
 		return;
 	}
 
@@ -58,15 +58,15 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		foreach ($all as $k => $v) $conf->remove($k);
 
 		$conf->set('true-this-or-dream-might-quit-youtube', (bool)($all['true-this-or-dream-might-quit-youtube'] ?? true));
-		$conf->set('allow-backup-cmd', (bool)($all['allow-backup-cmd'] ?? false));
-		$conf->set('archiver-format', (int)($all['archiver-format'] ?? BackupArchiver::ARCHIVER_ZIP));
+		// $conf->set('allow-backup-cmd', (bool)($all['allow-backup-cmd'] ?? false));
+		// $conf->set('archiver-format', (int)($all['archiver-format'] ?? BackupArchiver::ARCHIVER_ZIP));
 		$conf->set('backup-inside', (string)($all['backup-inside'] ?? $this->getSafeServerDataPath()));
 		$conf->set('backup-into', (string)($all['backup-into'] ?? $this->getSafeServerDataPath()));
 		$conf->set('backup-name', (string)($all['backup-name'] ?? 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}'));
-		$conf->set('dynamic-backup-ignore', (bool)($all['dynamic-backup-ignore'] ?? false));
-		$conf->set('check-for-file-interval', (int)($all['check-for-file-interval'] ?? 3));
+		$conf->set('smart-backup-ignorer', (bool)($all['smart-backup-ignorer'] ?? false));
+		$conf->set('file-checker-interval', (int)($all['file-checker-interval'] ?? 3));
 		$conf->set('ignore-disk-space', (bool)($all['ignore-disk-space'] ?? false));
-		$conf->set('archive-empty-dir', (bool)($all['archive-empty-dir'] ?? false));
+		// $conf->set('archive-empty-dir', (bool)($all['archive-empty-dir'] ?? false));
 
 		$conf->save();
 		$conf->reload();
@@ -82,7 +82,8 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 			'backup-*-*-* *-*-*.*',
 			'PocketMine-MP.phar',
 			'bin/',
-			'*.lock'
+			'*.lock',
+			'backup.me'
 		]));
 		return;
 	}
