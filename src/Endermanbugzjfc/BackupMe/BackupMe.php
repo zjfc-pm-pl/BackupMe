@@ -38,7 +38,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$checker = (new BackupMeFileCheckTask($this, $this->getSafeServerDataPath()));
 		$archiver->setChecker($checker)
 				 ->setSource((string)($this->getConfig()->get('backup-inside', $this->getSafeServerDataPath())))
-				 ->setDesk((string)($this->getConfig()->get('backup-into', $this->getSafeServerDataPath())))
+				 ->setDest((string)($this->getConfig()->get('backup-into', $this->getSafeServerDataPath())))
 				 ->setFormat((int)($this->getConfig()->get('archiver-format', BackupArchiver::ARCHIVER_ZIP)))
 				 ->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')))
 				 ->setSmartIgnore((bool)($this->getConfig()->get('smart-backup-ignorer', false)))
@@ -60,8 +60,8 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$conf->set('true-this-or-dream-might-quit-youtube', (bool)($all['true-this-or-dream-might-quit-youtube'] ?? true));
 		// $conf->set('allow-backup-cmd', (bool)($all['allow-backup-cmd'] ?? false));
 		// $conf->set('archiver-format', (int)($all['archiver-format'] ?? BackupArchiver::ARCHIVER_ZIP));
-		$conf->set('backup-inside', (string)($all['backup-inside'] ?? $this->getSafeServerDataPath()));
-		$conf->set('backup-into', (string)($all['backup-into'] ?? $this->getSafeServerDataPath()));
+		// $conf->set('backup-inside', (string)($all['backup-inside'] ?? $this->getSafeServerDataPath()));
+		// $conf->set('backup-into', (string)($all['backup-into'] ?? $this->getSafeServerDataPath()));
 		$conf->set('backup-name', (string)($all['backup-name'] ?? 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}'));
 		$conf->set('smart-backup-ignorer', (bool)($all['smart-backup-ignorer'] ?? false));
 		$conf->set('file-checker-interval', (int)($all['file-checker-interval'] ?? 3));
