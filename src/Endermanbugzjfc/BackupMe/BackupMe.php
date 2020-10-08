@@ -41,7 +41,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 				 ->setDest((string)($this->getConfig()->get('backup-into', $this->getSafeServerDataPath())))
 				 ->setFormat((int)($this->getConfig()->get('archiver-format', BackupArchiver::ARCHIVER_ZIP)))
 				 ->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')))
-				 ->setDynamicIgnore((bool)($this->getConfig()->get('smart-backup-ignorer', false)))
+				 ->setSmartIgnore((bool)($this->getConfig()->get('smart-backup-ignorer', false)))
 				 ->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)));
 		$this->getScheduler()->scheduleRepeatingTask($checker, (int)$this->getConfig()->get('file-checker-interval', 3) * 20);
 		return;

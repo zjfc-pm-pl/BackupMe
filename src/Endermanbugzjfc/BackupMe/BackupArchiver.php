@@ -42,7 +42,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 	protected $dest;
 	protected $name = 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}';
 	protected $format = self::ARCHIVER_ZIP;
-	protected $dynamicignore = false;
+	protected $smartignorer = false;
 	protected $ignorediskspace = false;
 
 	public function __construct(\pocketmine\plugin\Plugin $main) {
@@ -67,7 +67,7 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
-		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->source, $this->dest, $this->name, $this->format, $this->dynamicignore, (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
+		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->getSource(), $this->getDest(), $this->getName(), $this->getFormat(), $this->doSmartIgnore(), (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
@@ -132,8 +132,8 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		return $this;
 	}
 
-	public function setDynamicIgnore(bool $dynamicignore) : BackupArchiver {
-		$this->dynamicignore = $dynamicignore;
+	public function setSmartIgnore(bool $smartignorer) : BackupArchiver {
+		$this->smartignorer = $smartignorer;
 		return $this;
 	}
 
@@ -162,8 +162,8 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		return $this->format;
 	}
 
-	public function doDynamicIgnore() : ?bool {
-		return $this->dynamicignore;
+	public function doSmartIgnore() : ?bool {
+		return $this->smartignorer;
 	}
 
 	public function doIgnoreDiskSpace() : ?bool {

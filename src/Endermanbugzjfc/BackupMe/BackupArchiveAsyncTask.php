@@ -42,6 +42,7 @@ use function strpos;
 use function str_replace;
 use function unserialize;
 use function is_string;
+use function mkdir;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -86,10 +87,12 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 	public function onRun() : void {
 		$time = microtime(true);
+		@mkdir($this->source);
+		var_dump($this->source);
 		switch ($this->format) {
 			case BackupArchiver::ARCHIVER_ZIP:
 				$arch = (new \ZipArchive());
-				if ($arch->open($this->source . $this->name, \ZipArchive::CREATE) !== true ) {
+				if ($arch->open($this->source . $this->name, \ZipArchive::CREATE) !== true) {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Archiver cannot open file "' . $this->source . $this->name . '"')));
 					return;
 				}
@@ -139,11 +142,12 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					break;
 			}
 		} catch (\Throwable $ero) {
-			$this->setResult([self::RESULT_STOPPED, $time, $ttfiles, $ttignored, Utils::serializeException($ero)]);
+			// $this->setResult([self::RESULT_STOPPED, $time, $ttfiles, $ttignored, Utils::serializeException($ero)]);
+			$this->worker->getLogger()->logException($ero);
 			return;
 		}
 		/*if ($this->source . $this->name !== $this->dest) {
-			@copy($this->source . $this->name, $this->dest);
+			copy($this->source . $this->name, $this->dest);
 			@unlink($this->source . $this->name);
 			$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_COPIED_TO_DEST, $this->source . $this->name, $this->dest]);
 		}*/
@@ -202,7 +206,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 						$this->publishProgress([self::PROGRESS_FILE_IGNORED, $dir . $dirorfile]);
 						continue 2;
 					}
-					if ($this->doDynamicIgnore()) {
+					if (false/*$this->doDynamicIgnore()*/) {
 						$envir = unserialize($this->dynamicignore);
 						if (
 							((basename(dirname($dirorfile)) === 'player') and (!$envir[0])) or
@@ -225,7 +229,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					break;
 			}
 		} catch (\Throwable $ero) {
-			$this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
+			// $this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
+			$this->worker->getLogger()->logException($ero);
 		}
 		return;
 	}
