@@ -1,5 +1,4 @@
 # Specify filepatterns you want git to ignore.
 
-vendor/
 *.lock
 sftp-config*.json
