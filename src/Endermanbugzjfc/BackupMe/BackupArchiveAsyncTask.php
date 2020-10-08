@@ -41,40 +41,39 @@ use function implode;
 use function strpos;
 use function str_replace;
 use function unserialize;
-use function is_null;
+use function is_string;
 
 use const DIRECTORY_SEPARATOR;
 
 class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 	protected $source;
-	protected $desk;
+	protected $dest;
 	protected $format;
-	protected $dynamicignore;
+	protected $smartignore;
 	protected $uuid;
 	protected $ignorefilepath;
 
 	protected const PROGRESS_FILE_ADDED = 0;
 	protected const PROGRESS_FILE_IGNORED = 1;
-	protected const PROGRESS_FILE_AUTO_IGNORED = 2;
-	protected const PROGRESS_ARCHIVE_FILE_CREATED = 3;
-	protected const PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE = 4;
-	protected const PROGRESS_COMPRESSING_ARCHIVE = 5;
+	protected const PROGRESS_ARCHIVE_FILE_CREATED = 2;
+	protected const PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE = 3;
+	protected const PROGRESS_COMPRESSING_ARCHIVE = 4;
 
 	protected const RESULT_STOPPED = 0;
 	protected const RESULT_CANNOT_CREATE_ACHIVE_FILE = 1;
 
-	public function __construct(events\BackupRequest $request, string $source, string $desk, string $name, int $format, bool $dynamicignore, ?string $ignorefilepath) {
-		$this->desk = $desk . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $uuid = UUID::fromRandom());
+	public function __construct(events\BackupRequest $request, string $source, string $dest, string $name, int $format, bool $smartignore, ?string $ignorefilepath) {
+		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $uuid = UUID::fromRandom());
 		$this->source = $source;
 		$this->format = $format;
-		if (!$dynamicignore) $dynamicignore = [];
-		else $dynamicignore = [
+		if (!$smartignore) $smartignore = [];
+		else $smartignore = [
 			$request->getPlugin()->getServer()->shouldSavePlayerData(),
 			$request->getPlugin()->getServer()->hasWhitelist(),
 			!empty($request->getPlugin()->getServer()->getResourcePackManager()->getResourceStack())
 		];
-		$this->dynamicignore = serialize($dynamicignore);
+		$this->smartignore = serialize($smartignore);
 		$this->uuid = $uuid->toString();
 		$this->ignorefilepath = $ignorefilepath;
 		$this->storeLocal([$request, $this->uuid]);
@@ -86,8 +85,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		switch ($this->format) {
 			case BackupArchiver::ARCHIVER_ZIP:
 				$arch = (new \ZipArchive());
-				if ($arch->open($this->desk, \ZipArchive::CREATE) !== true ) {
-					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Archiver cannot open file "' . $this->desk . '"')));
+				if ($arch->open($this->dest, \ZipArchive::CREATE) !== true ) {
+					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Archiver cannot open file "' . $this->dest . '"')));
 					return;
 				}
 				break;
@@ -95,7 +94,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 			case BackupArchiver::ARCHIVER_TARGZ:
 			case BackupArchiver::ARCHIVER_TARBZ2:
 				try {
-					$arch = (new \PharData($this->desk));
+					$arch = (new \PharData($this->dest));
 				} catch (\Throwable $ero) {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException($ero));
 					return;
@@ -107,7 +106,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				return;
 				break;
 		}
-		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->desk]);
+		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->dest]);
 		$savedIgnores = self::cleanGitignore($this->source);
 		if (isset($this->ignorefilepath)) {
 			require 'libs/vendor/autoload.php';
@@ -152,7 +151,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				break;
 			
 			case true:
-				var_dump($path . $dirorfile . DIRECTORY_SEPARATOR);
 				$saved = self::cleanGitignore($path . $dirorfile . DIRECTORY_SEPARATOR, $saved);
 				break;
 		}
@@ -186,22 +184,16 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		foreach ($dirs as $dirorfile) try {
 			switch (is_dir($dir . $dirorfile)) {
 				case false:
+					if ($this->doSmartIgnore()) {
+						$envir = unserialize($this->smartignore);
+						if (
+							($dir . $dirorfile === $dir . 'whitelist.txt') and (!$envir[1])
+						) continue 2;
+					}
 					if (($ignore instanceof GitIgnoreChecker) and ($ignore->isPathIgnored(substr($dir, strlen($ignore->getRepository()->getPath())) . $dirorfile))) {
 						$ttignored++;
 						$this->publishProgress([self::PROGRESS_FILE_IGNORED, $dir . $dirorfile]);
 						continue 2;
-					}
-					if ($this->doDynamicIgnore()) {
-						$envir = unserialize($this->dynamicignore);
-						if (
-							((basename(dirname($dirorfile)) === 'player') and (!$envir[0])) or
-							((basename($dirorfile, '.txt') === 'whitelist') and (!$envir[1])) or
-							((basename(dirname($dirorfile)) === 'resource_packs') and (!$envir[2]))
-						) {
-							$ttignored++;
-							$this->publishProgress([self::PROGRESS_FILE_AUTO_IGNORED, $dir . $dirorfile]);
-							continue 2;
-						}
 					}
 					if ($dir . $dirorfile === $this->source . '.gitignore') continue 2;
 					$arch->addFile(substr($dir, strlen($this->source)) . $dirorfile);
@@ -210,6 +202,13 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					break;
 				
 				case true:
+					if ($this->doSmartIgnore()) {
+						$envir = unserialize($this->smartignore);
+						if (
+							(($dir . $dirorfile === $dir . 'players') and (!$envir[0])) or
+							(($dir . $dirorfile === $dir . 'resource_packs') and (!$envir[2]))
+						) continue 2;
+					}
 					$this->scanIn($arch, $ignore, $dir . $dirorfile . DIRECTORY_SEPARATOR, $ttfiles, $ttignored);
 					break;
 			}
@@ -226,8 +225,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		return;
 	}
 
-	protected function doDynamicIgnore() : bool {
-		return !empty(unserialize($this->dynamicignore));
+	protected function doSmartIgnore() : bool {
+		return !empty(unserialize($this->smartignore));
 	}
 
 	public function onProgressUpdate(Server $server, $progress) : void {
