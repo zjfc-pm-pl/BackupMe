@@ -31,7 +31,7 @@ class BackupAbortEvent extends BackupStopEvent {
 	protected $reason = 0;
 	protected $exception;
 
-	public function __construct(BackupRequest $e, ?\pocketmine\utils\UUID $uuid, int $reason, ?Throwable $ero) {
+	public function __construct(BackupRequest $e, ?\pocketmine\utils\UUID $uuid, int $reason, ?Throwable $ero = null) {
 		parent::__construct($e, $uuid ?? null, $reason, $ero ?? null);
 		$this->reason = $reason;
 		$this->exception = $ero;
