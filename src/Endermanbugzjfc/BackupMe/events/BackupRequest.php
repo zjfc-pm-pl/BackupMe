@@ -21,8 +21,8 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe\events;
 
-interface BackupRequest {
+interface BackupRequest extends \Logger {
 
 	public function getPlugin() : \pocketmine\plugin\Plugin;
-	public function getBackupMeFilePath() : ?string;
+	public function getBackupTaskUUID() : \pocketmine\utils\UUID;
 }

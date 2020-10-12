@@ -30,7 +30,7 @@ use function is_null;
 use function round;
 use function microtime;
 
-class BackupArchiver implements \pocketmine\event\Listener {
+class BackupRequestListener implements \pocketmine\event\Listener {
 
 	public const ARCHIVER_ZIP = 0;
 	public const ARCHIVER_TARGZ = 1;
