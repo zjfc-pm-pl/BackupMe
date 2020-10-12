@@ -51,7 +51,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected $dest;
 	protected $format;
 	protected $smartignore;
-	protected $uuid;
 	protected $ignorefilepath;
 
 	protected const PROGRESS_FILE_ADDED = 0;
@@ -64,7 +63,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected const RESULT_CANNOT_CREATE_ACHIVE_FILE = 1;
 
 	public function __construct(events\BackupRequest $request, string $source, string $dest, string $name, int $format, bool $smartignore, ?string $ignorefilepath) {
-		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $uuid = UUID::fromRandom());
+		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $request->getBackupTaskUUID());
 		$this->source = $source;
 		$this->format = $format;
 		if (!$smartignore) $smartignore = [];
@@ -74,9 +73,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 			!empty($request->getPlugin()->getServer()->getResourcePackManager()->getResourceStack())
 		];
 		$this->smartignore = serialize($smartignore);
-		$this->uuid = $uuid->toString();
 		$this->ignorefilepath = $ignorefilepath;
-		$this->storeLocal([$request, $this->uuid]);
+		$this->storeLocal($request);
 		return;
 	}
 
@@ -160,18 +158,18 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	public function onCompletion(Server $server) : void {
 		$result = $this->getResult();
 		$fridge = $this->fetchLocal(); // Don't judge name lol
-		$e = $fridge[0];
+		$e = $fridge;
 		switch ((int)$result[0]) {
 			case self::RESULT_CANNOT_CREATE_ACHIVE_FILE:
 				$ero = @unserialize($result[1]);
-				(new events\BackupAbortEvent($e, UUID::fromString($fridge[1]), events\BackupAbortEvent::RESULT_CANNOT_CREATE_ACHIVE_FILE, $ero ?? null))->call();
+				(new events\BackupAbortEvent($e, events\BackupAbortEvent::RESULT_CANNOT_CREATE_ACHIVE_FILE, $ero ?? null))->call();
 				break;
 
 			case self::RESULT_STOPPED:
-				if (!is_null($result[4])) (new events\BackupAbortEvent($e, UUID::fromString($fridge[1]), events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
+				if (!is_null($result[4])) (new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
 				else {
 					$e->debug('Compress successed');
-					(new events\BackupStopEvent($e, UUID::fromString($this->uuid), $result[1], $result[2], $result[3]))->call();
+					(new events\BackupStopEvent($e, $result[1], $result[2], $result[3]))->call();
 				}
 				break;
 		}
@@ -229,7 +227,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	}
 
 	public function onProgressUpdate(Server $server, $progress) : void {
-		$e = $this->fetchLocal()[0];
+		$e = $this->fetchLocal();
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
 				$e->debug('Added file "' . (string)$progress[1] . '"');
@@ -251,7 +249,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		return;
 	}
 
-	protected static function replaceFileName(string $name, int $format, UUID $uuid) : string {
+	protected static function replaceFileName(string $name, int $format, request->getBackupTaskUUID() {
 		$name = str_replace('{y}', date('Y'), $name);
 		$name = str_replace('{m}', date('m'), $name);
 		$name = str_replace('{d}', date('d'), $name);

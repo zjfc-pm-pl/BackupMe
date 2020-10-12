@@ -79,7 +79,6 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		}
 
 		if ($e instanceof events\BackupAbortEvent) {
-			var_dump(get_class($ero));
 			switch ($e->getReason()) {
 				case events\BackupAbortEvent::REASON_COMPRESS_FAILED:
 					$log->critical('>> !BACKUP FAILURED! << Exception encounted when compressing the backup archive file');

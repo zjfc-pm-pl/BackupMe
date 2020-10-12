@@ -37,6 +37,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
 		}
+		$this->displayStartupLogs();
 		events\BackupRequestByCommandEvent::setBackupMePluginVersion($this);
 		$this->getServer()->getPluginManager()->registerEvents($archiver = (new BackupArchiver($this)), $this);
 		$checker = (new BackupMeFileCheckTask($this, $this->getSafeServerDataPath()));
@@ -74,6 +75,20 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$conf->save();
 		$conf->reload();
 		return $conf->get('true-this-or-dream-might-quit-youtube', true);
+	}
+
+	private function displayStartupLogs() : void {
+		$log = $this->getLogger();
+		$log->info('======= B A C K U P . M E =======');
+		$log->info('');
+		$log->info('Backup server by creating a "backup.me" file');
+		$log->info('Or use the "backupme" command');
+		$log->info('');
+		$log->debug('Plugin version: ' . $this->getDescription()->getVersion());
+		$log->debug('Plugin PHAR file hash: ' . $this->isPhar() ? md5_file($this->getFile()) : 'UNKNOWN');
+		$log->debug('');
+		$log->info('=================================');
+		return;
 	}
 
 	private function saveIgnoreFile() : void {

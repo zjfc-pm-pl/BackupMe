@@ -37,6 +37,7 @@ use function time;
 use function implode;
 use function get_class;
 use function md5_file;
+use function phpversion;
 
 class BackupRequestByCommandEvent extends \pocketmine\event\plugin\PluginEvent implements \pocketmine\event\Cancellable, BackupRequest {
 
@@ -153,6 +154,7 @@ class BackupRequestByCommandEvent extends \pocketmine\event\plugin\PluginEvent i
 			'Error occurred timestamp: ' . (string)time(),
 			'BackupMe plugin version: ' . (string)self::$version,
 			'Plugin PHAR file hash: ' . (string)self::$hash,
+			'PHP binary version: ' . (string)phpversion(),
 			'',
 			'Error message: ' . $e->getMessage(),
 			'Error type: ' . get_class($e),
@@ -162,5 +164,9 @@ class BackupRequestByCommandEvent extends \pocketmine\event\plugin\PluginEvent i
 		$pages[] = 'Stack trace >>';
 		foreach (Utils::printableTrace($trace ?? $e->getTrace()) as $line) $pages[] = $line;
 		return $pages;
+	}
+
+	public function getBackupMeFilePath() : ?string {
+		return null;
 	}
 }
