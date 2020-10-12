@@ -37,6 +37,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
 		}
+		events\BackupRequestByCommandEvent::setBackupMePluginVersion($this);
 		$this->getServer()->getPluginManager()->registerEvents($archiver = (new BackupArchiver($this)), $this);
 		$checker = (new BackupMeFileCheckTask($this, $this->getSafeServerDataPath()));
 		$archiver->setChecker($checker)
@@ -99,5 +100,13 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		if (!$p->hasPermission('backupme.cmd.backup')) $p->sendMessage(TF::BOLD . TF::RED . "You do not have the permission to use this command!");
 		(new events\BackupRequestByCommandEvent($this, $p))->call();
 		return true;
+	}
+
+	public function getPharPath() : string {
+		return $this->getFile();
+	}
+
+	public function isPluginCompiled() : bool {
+		return $this->isPhar();
 	}
 }
