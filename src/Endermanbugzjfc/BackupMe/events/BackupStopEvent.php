@@ -21,20 +21,16 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe\events;
 
-use pocketmine\utils\UUID;
-
 class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent implements \pocketmine\event\Cancellable {
 
 	protected $request;
 	protected $start;
 	protected $files;
 	protected $ignored;
-	protected $uuid;
 	protected $time;
 
-	public function __construct(BackupRequest $e, ?UUID $uuid, float $time = null, int $files = null, int $ignored = null) {
+	public function __construct(BackupRequest $e, float $time = null, int $files = null, int $ignored = null) {
 		$this->request = $e;
-		$this->uuid = $uuid;
 		$this->start = $time;
 		$this->files = $files;
 		$this->ignored = $ignored;
@@ -54,9 +50,5 @@ class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent implements \p
 
 	public function getTotalFileIgnored() : ?int {
 		return $this->ignored;
-	}
-
-	public function getBackupTaskUUID() : ?UUID {
-		return $this->uuid;
 	}
 }

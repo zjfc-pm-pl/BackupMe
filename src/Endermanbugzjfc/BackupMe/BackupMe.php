@@ -21,6 +21,9 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
+use pocketmine\command\{Command, CommandSender};
+use pocketmine\utils\TextFormat as TF;
+
 use function dirname;
 use function file_put_contents;
 use function file_exists;
@@ -34,6 +37,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
 		}
+		events\BackupRequestByCommandEvent::setBackupMePluginVersion($this);
 		$this->getServer()->getPluginManager()->registerEvents($archiver = (new BackupArchiver($this)), $this);
 		$checker = (new BackupMeFileCheckTask($this, $this->getSafeServerDataPath()));
 		$archiver->setChecker($checker)
@@ -58,7 +62,6 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		foreach ($all as $k => $v) $conf->remove($k);
 
 		$conf->set('true-this-or-dream-might-quit-youtube', (bool)($all['true-this-or-dream-might-quit-youtube'] ?? true));
-		// $conf->set('allow-backup-cmd', (bool)($all['allow-backup-cmd'] ?? false));
 		// $conf->set('archiver-format', (int)($all['archiver-format'] ?? BackupArchiver::ARCHIVER_ZIP));
 		// $conf->set('backup-inside', (string)($all['backup-inside'] ?? $this->getSafeServerDataPath()));
 		// $conf->set('backup-into', (string)($all['backup-into'] ?? $this->getSafeServerDataPath()));
@@ -90,5 +93,20 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 
 	private function getSafeServerDataPath() : string {
 		return dirname($this->getDataFolder(), 2) . DIRECTORY_SEPARATOR;
+	}
+
+	public function onCommand(CommandSender $p, Command $cmd, string $alias, array $args) : bool {
+		if (!$cmd->getName() === 'backupme') return true;
+		if (!$p->hasPermission('backupme.cmd.backup')) $p->sendMessage(TF::BOLD . TF::RED . "You do not have the permission to use this command!");
+		(new events\BackupRequestByCommandEvent($this, $p))->call();
+		return true;
+	}
+
+	public function getPharPath() : string {
+		return $this->getFile();
+	}
+
+	public function isPluginCompiled() : bool {
+		return $this->isPhar();
 	}
 }

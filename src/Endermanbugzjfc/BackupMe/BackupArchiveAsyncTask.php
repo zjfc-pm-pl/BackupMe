@@ -161,7 +161,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$result = $this->getResult();
 		$fridge = $this->fetchLocal(); // Don't judge name lol
 		$e = $fridge[0];
-		$log = $e->getPlugin()->getLogger();
 		switch ((int)$result[0]) {
 			case self::RESULT_CANNOT_CREATE_ACHIVE_FILE:
 				$ero = @unserialize($result[1]);
@@ -171,7 +170,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 			case self::RESULT_STOPPED:
 				if (!is_null($result[4])) (new events\BackupAbortEvent($e, UUID::fromString($fridge[1]), events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
 				else {
-					$log->debug('Compress successed');
+					$e->debug('Compress successed');
 					(new events\BackupStopEvent($e, UUID::fromString($this->uuid), $result[1], $result[2], $result[3]))->call();
 				}
 				break;
@@ -230,23 +229,23 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	}
 
 	public function onProgressUpdate(Server $server, $progress) : void {
-		$log = $this->fetchLocal()[0]->getPlugin()->getLogger();
+		$e = $this->fetchLocal()[0];
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
-				$log->debug('Added file "' . (string)$progress[1] . '"');
+				$e->debug('Added file "' . (string)$progress[1] . '"');
 				break;
 
 			case self::PROGRESS_FILE_IGNORED:
-				$log->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
+				$e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
 				break;
 
 			case self::PROGRESS_ARCHIVE_FILE_CREATED:
-				$log->debug('Created backup archive file "' . (string)$progress[1] . '"');
+				$e->debug('Created backup archive file "' . (string)$progress[1] . '"');
 				break;
 
 			case self::PROGRESS_COMPRESSING_ARCHIVE:
-				$log->info('Compressing backup archive file...');
-				$log->warning('This will take a while, do not shutdown the server!');
+				$e->info('Compressing backup archive file...');
+				$e->warning('This will take a while, do not shutdown the server!');
 				break;
 		}
 		return;
