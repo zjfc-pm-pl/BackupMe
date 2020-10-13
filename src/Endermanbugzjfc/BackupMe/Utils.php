@@ -29,12 +29,16 @@ use function get_resource_type;
 use function array_walk_recursive;
 use function serialize;
 use function unserialize;
+use function implode;
+use function array_filter;
+use function explode;
+use function strpos;
+use function str_replace;
 
 class Utils {
 
 	private function __construct() {}
 
-	// https://gist.github.com/Thinkscape/805ba8b91cdce6bcaf7c
 	public static function serializeException(\Throwable $ero) : string {
 		$traceProperty = (new \ReflectionClass('Exception'))->getProperty('trace');
         $traceProperty->setAccessible(true);
@@ -61,4 +65,10 @@ class Utils {
         $traceProperty->setAccessible(false);
         return serialize($ero);
 	}
+
+    public static function filterIgnoreFileComments(string $content) : string {
+        return implode("\n", array_filter(explode("\n", $content), function(string $line) : bool {
+            return strpos($line, '#') !== 0 and str_replace(' ', '', $line) !== '';
+        }));
+    }
 }
