@@ -25,4 +25,6 @@ interface BackupRequest extends \Logger {
 
 	public function getPlugin() : \pocketmine\plugin\Plugin;
 	public function getBackupTaskUUID() : \pocketmine\utils\UUID;
+	public function getBackupMeFilePath() : ?string;
+	public function getBackupIgnoreContent() : ?string;
 }

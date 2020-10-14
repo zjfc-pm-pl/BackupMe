@@ -31,17 +31,12 @@ use function scandir;
 use function basename;
 use function dirname;
 use function microtime;
-use function copy;
 use function unlink;
 use function is_dir;
 use function file_get_contents;
 use function file_put_contents;
-use function explode;
-use function implode;
-use function strpos;
 use function str_replace;
 use function unserialize;
-use function is_string;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -50,9 +45,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected $source;
 	protected $dest;
 	protected $format;
-	protected $smartignore;
-	protected $uuid;
-	protected $ignorefilepath;
+	protected $backupignore;
 
 	protected const PROGRESS_FILE_ADDED = 0;
 	protected const PROGRESS_FILE_IGNORED = 1;
@@ -63,20 +56,12 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected const RESULT_STOPPED = 0;
 	protected const RESULT_CANNOT_CREATE_ACHIVE_FILE = 1;
 
-	public function __construct(events\BackupRequest $request, string $source, string $dest, string $name, int $format, bool $smartignore, ?string $ignorefilepath) {
-		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $uuid = UUID::fromRandom());
+	public function __construct(events\BackupRequest $request, string $source, string $dest, string $name, int $format, ?string $backupignore) {
+		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $request->getBackupTaskUUID());
 		$this->source = $source;
 		$this->format = $format;
-		if (!$smartignore) $smartignore = [];
-		else $smartignore = [
-			$request->getPlugin()->getServer()->shouldSavePlayerData(),
-			$request->getPlugin()->getServer()->hasWhitelist(),
-			!empty($request->getPlugin()->getServer()->getResourcePackManager()->getResourceStack())
-		];
-		$this->smartignore = serialize($smartignore);
-		$this->uuid = $uuid->toString();
-		$this->ignorefilepath = $ignorefilepath;
-		$this->storeLocal([$request, $this->uuid]);
+		$this->backupignore = $backupignore;
+		$this->storeLocal($request);
 		return;
 	}
 
@@ -108,10 +93,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		}
 		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->dest]);
 		$savedIgnores = self::cleanGitignore($this->source);
-		if (isset($this->ignorefilepath)) {
+		if (isset($this->backupignore)) {
 			require 'libs/vendor/autoload.php';
-			@copy($this->ignorefilepath, $this->source . '.gitignore');
-			@self::filterIgnoreFileComments($this->source . '.gitignore');
+			@file_put_contents($this->source . '.gitignore', Utils::filterIgnoreFileComments($this->backupignore));
 			$ignore = (new GitIgnoreChecker($this->source));
 		}
 		$ttfiles = 0;
@@ -160,18 +144,18 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	public function onCompletion(Server $server) : void {
 		$result = $this->getResult();
 		$fridge = $this->fetchLocal(); // Don't judge name lol
-		$e = $fridge[0];
+		$e = $fridge;
 		switch ((int)$result[0]) {
 			case self::RESULT_CANNOT_CREATE_ACHIVE_FILE:
 				$ero = @unserialize($result[1]);
-				(new events\BackupAbortEvent($e, UUID::fromString($fridge[1]), events\BackupAbortEvent::RESULT_CANNOT_CREATE_ACHIVE_FILE, $ero ?? null))->call();
+				(new events\BackupAbortEvent($e, events\BackupAbortEvent::RESULT_CANNOT_CREATE_ACHIVE_FILE, $ero ?? null))->call();
 				break;
 
 			case self::RESULT_STOPPED:
-				if (!is_null($result[4])) (new events\BackupAbortEvent($e, UUID::fromString($fridge[1]), events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
+				if (!is_null($result[4])) (new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
 				else {
 					$e->debug('Compress successed');
-					(new events\BackupStopEvent($e, UUID::fromString($this->uuid), $result[1], $result[2], $result[3]))->call();
+					(new events\BackupStopEvent($e, $result[1], $result[2], $result[3]))->call();
 				}
 				break;
 		}
@@ -183,12 +167,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		foreach ($dirs as $dirorfile) try {
 			switch (is_dir($dir . $dirorfile)) {
 				case false:
-					if ($this->doSmartIgnore()) {
-						$envir = unserialize($this->smartignore);
-						if (
-							($dir . $dirorfile === $dir . 'whitelist.txt') and (!$envir[1])
-						) continue 2;
-					}
 					if (($ignore instanceof GitIgnoreChecker) and ($ignore->isPathIgnored(substr($dir, strlen($ignore->getRepository()->getPath())) . $dirorfile))) {
 						$ttignored++;
 						$this->publishProgress([self::PROGRESS_FILE_IGNORED, $dir . $dirorfile]);
@@ -201,13 +179,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					break;
 				
 				case true:
-					if ($this->doSmartIgnore()) {
-						$envir = unserialize($this->smartignore);
-						if (
-							(($dir . $dirorfile === $dir . 'players') and (!$envir[0])) or
-							(($dir . $dirorfile === $dir . 'resource_packs') and (!$envir[2]))
-						) continue 2;
-					}
 					$this->scanIn($arch, $ignore, $dir . $dirorfile . DIRECTORY_SEPARATOR, $ttfiles, $ttignored);
 					break;
 			}
@@ -217,19 +188,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		return;
 	}
 
-	protected static function filterIgnoreFileComments(string $ignorefilepath) : void {
-		file_put_contents($ignorefilepath, implode("\n", array_filter(explode("\n", file_get_contents($ignorefilepath)), function(string $line) : bool {
-			return strpos($line, '#') !== 0 and str_replace(' ', '', $line) !== '';
-		})));
-		return;
-	}
-
-	protected function doSmartIgnore() : bool {
-		return !empty(unserialize($this->smartignore));
-	}
-
 	public function onProgressUpdate(Server $server, $progress) : void {
-		$e = $this->fetchLocal()[0];
+		$e = $this->fetchLocal();
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
 				$e->debug('Added file "' . (string)$progress[1] . '"');
@@ -251,7 +211,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		return;
 	}
 
-	protected static function replaceFileName(string $name, int $format, UUID $uuid) : string {
+	protected static function replaceFileName(string $name, int $format, request->getBackupTaskUUID() {
 		$name = str_replace('{y}', date('Y'), $name);
 		$name = str_replace('{m}', date('m'), $name);
 		$name = str_replace('{d}', date('d'), $name);

@@ -51,4 +51,8 @@ class BackupStopEvent extends \pocketmine\event\plugin\PluginEvent implements \p
 	public function getTotalFileIgnored() : ?int {
 		return $this->ignored;
 	}
+
+	final public function getBackupTaskUUID() : \pocketmine\utils\UUID {
+		return $this->getRequest()->getBackupTaskUUID();
+	}
 }
