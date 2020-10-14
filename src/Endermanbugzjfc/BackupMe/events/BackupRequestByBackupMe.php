@@ -21,12 +21,5 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe\events;
 
-interface BackupRequest extends \Logger {
-
-	public function getPlugin() : \pocketmine\plugin\Plugin;
-	public function getBackupTaskUUID() : \pocketmine\utils\UUID;
-	public function getBackupMeFilePath() : ?string;
-	public function getBackupIgnoreContent() : ?string;
-	public function getBackupArchiveFileName() : string;
-	public function getBackupArchiverFormat() : int;
+abstract class BackupRequestByBackupMeEvent extends \pocketmine\event\plugin\PluginEvent implements \pocketmine\event\Cancellable, BackupRequest {
 }

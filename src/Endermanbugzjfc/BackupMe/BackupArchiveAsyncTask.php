@@ -25,7 +25,6 @@ use pocketmine\{Server, plugin\Plugin, utils\UUID};
 
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
-use function date;
 use function substr;
 use function scandir;
 use function basename;
@@ -56,11 +55,11 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected const RESULT_STOPPED = 0;
 	protected const RESULT_CANNOT_CREATE_ACHIVE_FILE = 1;
 
-	public function __construct(events\BackupRequest $request, string $source, string $dest, string $name, int $format, ?string $backupignore) {
-		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $request->getBackupTaskUUID());
+	public function __construct(events\BackupRequest $request, string $source, string $dest) {
+		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . $request->getBackupArchiveFileName();
 		$this->source = $source;
-		$this->format = $format;
-		$this->backupignore = $backupignore;
+		$this->format = $request->getBackupArchiverFormat();
+		$this->backupignore = $request->getBackupIgnoreContent();
 		$this->storeLocal($request);
 		return;
 	}
@@ -76,7 +75,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				}
 				break;
 
-			case BackupArchiver::ARCHIVER_TARGZ:
+			/*case BackupArchiver::ARCHIVER_TARGZ:
 			case BackupArchiver::ARCHIVER_TARBZ2:
 				try {
 					$arch = (new \PharData($this->dest));
@@ -84,7 +83,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException($ero));
 					return;
 				}
-				break;
+				break;*/
 			
 			default:
 				$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Unknown backup archiver format ID "' . $this->format . '"')));
@@ -209,31 +208,5 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				break;
 		}
 		return;
-	}
-
-	protected static function replaceFileName(string $name, int $format, request->getBackupTaskUUID() {
-		$name = str_replace('{y}', date('Y'), $name);
-		$name = str_replace('{m}', date('m'), $name);
-		$name = str_replace('{d}', date('d'), $name);
-		$name = str_replace('{h}', date('H'), $name);
-		$name = str_replace('{i}', date('i'), $name);
-		$name = str_replace('{s}', date('s'), $name);
-		switch ($format) {
-			case BackupArchiver::ARCHIVER_ZIP:
-				$format = 'zip';
-				break;
-
-			/*case BackupArchiver::ARCHIVER_TARGZ:
-			case BackupArchiver::ARCHIVER_TARBZ2:
-				$format = 'tar';
-				break;*/
-			
-			default:
-				throw new \InvalidArgumentException('Unknown backup archiver format ID "' . $format . '"');
-				break;
-		}
-		$name = str_replace('{format}', $format, $name);
-		$name = str_replace('{uuid}', $uuid->toString(), $name);
-		return $name;
 	}
 }

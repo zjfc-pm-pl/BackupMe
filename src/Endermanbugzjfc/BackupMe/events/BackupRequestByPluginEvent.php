@@ -23,7 +23,7 @@ namespace Endermanbugzjfc\BackupMe\events;
 
 use pocketmine\{plugin\Plugin, utils\UUID};
 
-class BackupRequestByPluginEvent extends \pocketmine\event\plugin\PluginEvent implements \pocketmine\event\Cancellable, BackupRequest {
+class BackupRequestByPluginEvent extends BackupRequestByBackupMeEvent {
 
 	protected $main;
 	protected $backupme;

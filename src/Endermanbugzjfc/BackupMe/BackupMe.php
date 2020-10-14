@@ -31,6 +31,8 @@ use function file_exists;
 use const DIRECTORY_SEPARATOR;
 
 final class BackupMe extends \pocketmine\plugin\PluginBase {
+
+	public const PREFIX = TF::BLUE . '[' . TF::BOLD . TF::DARK_AQUA . 'BackupMe' . TF::RESET . TF::BLUE  .']';
 	
 	public function onEnable() : void {
 		if (!$this->initConfig()) {
@@ -42,8 +44,8 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$this->getServer()->getPluginManager()->registerEvents($archiver = (new BackupArchiver($this)), $this);
 		$checker = (new BackupMeFileCheckTask($this, $this->getSafeServerDataPath()));
 		$archiver->setChecker($checker)
-				 ->setSource((string)($this->getConfig()->get('backup-inside', $this->getSafeServerDataPath())))
-				 ->setDest((string)($this->getConfig()->get('backup-into', $this->getSafeServerDataPath())))
+				 ->setSource((string)(/*$this->getConfig()->get('backup-inside', $this->getSafeServerDataPath())*/$this->getSafeServerDataPath()))
+				 ->setDest((string)(/*$this->getConfig()->get('backup-into', $this->getSafeServerDataPath())*/$this->getSafeServerDataPath()))
 				 ->setFormat((int)($this->getConfig()->get('archiver-format', BackupArchiver::ARCHIVER_ZIP)))
 				 ->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')))
 				 ->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)))
