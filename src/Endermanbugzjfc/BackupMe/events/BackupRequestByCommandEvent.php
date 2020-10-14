@@ -25,7 +25,6 @@ use pocketmine\{
 	plugin\Plugin, 
 	command\CommandSender, 
 	utils\TextFormat as TF, 
-	utils\UUID, 
 	utils\Utils,
 	Player,
 	item\Item
@@ -45,22 +44,11 @@ class BackupRequestByCommandEvent extends BackupRequestByBackupMeEvent {
 	private static $version = 'UNKNOWN';
 	private static $hash = 'UNKNOWN';
 
-	protected $main;
 	protected $sender;
-	protected $uuid;
 
 	public function __construct(Plugin $main, CommandSender $p) {
-		$this->main = $main;
+		parent::__construct($main);
 		$this->sender = $p;
-		$this->uuid = UUID::fromRandom();
-	}
-
-	public function getBackupTaskUUID() : UUID {
-		return $this->uuid;
-	}
-
-	public function getPlugin() : Plugin {
-		return $this->main;
 	}
 
 	public function getRequestCommandSender() : CommandSender {
@@ -148,7 +136,7 @@ class BackupRequestByCommandEvent extends BackupRequestByBackupMeEvent {
 		self::$hash = $main->isPhar() ? md5_file($main->getPharPath()) : 'UNKNOWN';
 	}
 
-	public static function getErrorLogPages(\Throwable $e, $trace = null) : array {
+	protected static function getErrorLogPages(\Throwable $e, $trace = null) : array {
 		$pages = [];
 		$pages[] = implode(TF::RESET . "\n", [
 			'Error occurred timestamp: ' . (string)time(),

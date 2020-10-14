@@ -51,10 +51,9 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 
 	public function request(events\BackupRequest $e) : void {
 		if ($e->isCancelled()) return;
-		if (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore')) $e->setBackupIgnoreContent(file_get_contents($e->getPlugin()->getDataFolder() . 'backupignore.gitignore'));
 		$this->pauseChecker();
 		$this->main->getLogger()->debug('File checker pasued');
-		$log = $e->getPlugin()->getLogger();
+		$log = $e;
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
 		if (($free = (int)disk_free_space($this->dest)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
@@ -68,12 +67,14 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
-		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->getSource(), $this->getDest(), $this->getName(), $this->getFormat(), $this->doSmartIgnore(), (!is_null($ignore = $e->getBackupIgnoreContent()) ? $ignore : (file_exists($this->ignorefilepath) ? file_get_contents($this->ignorefilepath) : null))));
+		if (is_null($e->getBackupIgnoreContent()) and file_exists($this->ignorefilepath)) $e->setBackupIgnoreContent(Utils::filterIgnoreFileComments(file_get_contents($this->ignorefilepath)));
+		if (is_null($e->getFormat())) $e->setFormat($this->getFormat());
+		if (is_null($e->getName())) $e->setName($this->getName());
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
 		if ($e->isCancelled()) return;
-		$log = $this->main->getLogger();
+		$log = $e->getRequest();
 		if (!is_null($file = ($e->getRequest()->getBackupMeFilePath() ?? null))) {
 			@unlink($file);
 			$log->debug('Deleted file "' . $file . '"');

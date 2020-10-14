@@ -27,6 +27,10 @@ interface BackupRequest extends \Logger {
 	public function getBackupTaskUUID() : \pocketmine\utils\UUID;
 	public function getBackupMeFilePath() : ?string;
 	public function getBackupIgnoreContent() : ?string;
-	public function getBackupArchiveFileName() : string;
-	public function getBackupArchiverFormat() : int;
+	public function getName() : ?string;
+	public function getFormat() : ?int;
+
+	public function setBackupIgnoreContent(string $ignore);
+	public function setName(string $name);
+	public function setFormat(int $format);
 }

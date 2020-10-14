@@ -21,7 +21,7 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
-use pocketmine\{Server, plugin\Plugin, utils\UUID};
+use pocketmine\Server;
 
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
@@ -34,7 +34,6 @@ use function unlink;
 use function is_dir;
 use function file_get_contents;
 use function file_put_contents;
-use function str_replace;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
@@ -44,7 +43,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected $source;
 	protected $dest;
 	protected $format;
-	protected $backupignore;
+	protected $ignore;
 
 	protected const PROGRESS_FILE_ADDED = 0;
 	protected const PROGRESS_FILE_IGNORED = 1;
@@ -59,7 +58,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . $request->getBackupArchiveFileName();
 		$this->source = $source;
 		$this->format = $request->getBackupArchiverFormat();
-		$this->backupignore = $request->getBackupIgnoreContent();
+		$this->ignore = $request->getBackupIgnoreContent();
 		$this->storeLocal($request);
 		return;
 	}
@@ -92,9 +91,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		}
 		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->dest]);
 		$savedIgnores = self::cleanGitignore($this->source);
-		if (isset($this->backupignore)) {
+		if (isset($this->ignore)) {
 			require 'libs/vendor/autoload.php';
-			@file_put_contents($this->source . '.gitignore', Utils::filterIgnoreFileComments($this->backupignore));
+			@file_put_contents($this->source . '.gitignore', $this->ignore);
 			$ignore = (new GitIgnoreChecker($this->source));
 		}
 		$ttfiles = 0;
