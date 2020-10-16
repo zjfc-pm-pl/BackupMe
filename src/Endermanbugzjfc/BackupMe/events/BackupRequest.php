@@ -66,7 +66,7 @@ abstract class BackupRequest extends \pocketmine\event\plugin\PluginEvent implem
 	}
 	
 	public function setName(string $name) {
-		$this->name = \Endermanbugzjfc\BackupMe\Utils::replaceFileName($name, $this->getBackupRequestListenerFormat(), $this->getBackupTaskUUID());
+		$this->name = \Endermanbugzjfc\BackupMe\Utils::replaceFileName($name, $this->getFormat(), $this->getBackupTaskUUID());
 		return;
 	}
 	

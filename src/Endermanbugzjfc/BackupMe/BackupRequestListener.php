@@ -52,8 +52,8 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 	public function request(events\BackupRequest $e) : void {
 		if ($e->isCancelled()) return;
 		$this->pauseChecker();
-		$this->main->getLogger()->debug('File checker pasued');
 		$log = $e;
+		$log->debug('File checker pasued');
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
 		if (($free = (int)disk_free_space($this->dest)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
@@ -70,6 +70,8 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		if (is_null($e->getBackupIgnoreContent()) and file_exists($this->ignorefilepath)) $e->setBackupIgnoreContent(Utils::filterIgnoreFileComments(file_get_contents($this->ignorefilepath)));
 		if (is_null($e->getFormat())) $e->setFormat($this->getFormat());
 		if (is_null($e->getName())) $e->setName($this->getName());
+		$this->main->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->getSource(), $this->getDest()));
+		return;
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {

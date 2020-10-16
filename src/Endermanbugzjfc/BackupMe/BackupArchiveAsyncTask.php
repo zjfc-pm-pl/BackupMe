@@ -21,7 +21,7 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
-use pocketmine\Server;
+use pocketmine\{Server, utils\TextFormat as TF};
 
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
@@ -53,9 +53,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected const RESULT_CANNOT_CREATE_ACHIVE_FILE = 1;
 
 	public function __construct(events\BackupRequest $request, string $source, string $dest) {
-		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . $request->getBackupArchiveFileName();
+		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . $request->getName();
 		$this->source = $source;
-		$this->format = $request->getBackupRequestListenerFormat();
+		$this->format = $request->getFormat();
 		$this->ignore = $request->getBackupIgnoreContent();
 		$this->storeLocal($request);
 		return;
@@ -188,11 +188,13 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$e = $this->fetchLocal();
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
-				$e->debug('Added file "' . (string)$progress[1] . '"');
+				if (($e instanceof events\BackupRequestByCommandEvent) and !is_null($e->getSender())) $e->getSender()->sendPopup(TF::BOLD . TF::GREEN . "File added: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
+				else $e->debug('Added file "' . (string)$progress[1] . '"');
 				break;
 
 			case self::PROGRESS_FILE_IGNORED:
-				$e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
+				if (($e instanceof events\BackupRequestByCommandEvent) and !is_null($e->getSender())) $e->getSender()->sendPopup(TF::BOLD . TF::RED . "File ignored: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
+				else $e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
 				break;
 
 			case self::PROGRESS_ARCHIVE_FILE_CREATED:
