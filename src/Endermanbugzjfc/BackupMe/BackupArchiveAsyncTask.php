@@ -21,21 +21,17 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
-use pocketmine\{Server, plugin\Plugin, utils\UUID};
+use pocketmine\{Server, utils\TextFormat as TF};
 
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
-use function date;
 use function substr;
 use function scandir;
-use function basename;
-use function dirname;
 use function microtime;
 use function unlink;
 use function is_dir;
 use function file_get_contents;
 use function file_put_contents;
-use function str_replace;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
@@ -45,7 +41,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected $source;
 	protected $dest;
 	protected $format;
-	protected $backupignore;
+	protected $ignore;
 
 	protected const PROGRESS_FILE_ADDED = 0;
 	protected const PROGRESS_FILE_IGNORED = 1;
@@ -56,11 +52,11 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	protected const RESULT_STOPPED = 0;
 	protected const RESULT_CANNOT_CREATE_ACHIVE_FILE = 1;
 
-	public function __construct(events\BackupRequest $request, string $source, string $dest, string $name, int $format, ?string $backupignore) {
-		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . self::replaceFileName($name, $format, $request->getBackupTaskUUID());
+	public function __construct(events\BackupRequest $request, string $source, string $dest) {
+		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . $request->getName();
 		$this->source = $source;
-		$this->format = $format;
-		$this->backupignore = $backupignore;
+		$this->format = $request->getFormat();
+		$this->ignore = $request->getBackupIgnoreContent();
 		$this->storeLocal($request);
 		return;
 	}
@@ -68,7 +64,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	public function onRun() : void {
 		$time = microtime(true);
 		switch ($this->format) {
-			case BackupArchiver::ARCHIVER_ZIP:
+			case BackupRequestListener::ARCHIVER_ZIP:
 				$arch = (new \ZipArchive());
 				if ($arch->open($this->dest, \ZipArchive::CREATE) !== true ) {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Archiver cannot open file "' . $this->dest . '"')));
@@ -76,15 +72,15 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				}
 				break;
 
-			case BackupArchiver::ARCHIVER_TARGZ:
-			case BackupArchiver::ARCHIVER_TARBZ2:
+			/*case BackupRequestListener::ARCHIVER_TARGZ:
+			case BackupRequestListener::ARCHIVER_TARBZ2:
 				try {
 					$arch = (new \PharData($this->dest));
 				} catch (\Throwable $ero) {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException($ero));
 					return;
 				}
-				break;
+				break;*/
 			
 			default:
 				$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Unknown backup archiver format ID "' . $this->format . '"')));
@@ -93,9 +89,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		}
 		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->dest]);
 		$savedIgnores = self::cleanGitignore($this->source);
-		if (isset($this->backupignore)) {
+		if (isset($this->ignore)) {
 			require 'libs/vendor/autoload.php';
-			@file_put_contents($this->source . '.gitignore', Utils::filterIgnoreFileComments($this->backupignore));
+			@file_put_contents($this->source . '.gitignore', $this->ignore);
 			$ignore = (new GitIgnoreChecker($this->source));
 		}
 		$ttfiles = 0;
@@ -106,15 +102,15 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$this->publishProgress([self::PROGRESS_COMPRESSING_ARCHIVE]);
 		try {
 			switch ($this->format) {
-				case BackupArchiver::ARCHIVER_ZIP:
+				case BackupRequestListener::ARCHIVER_ZIP:
 					$arch->close();
 					break;
 
-				case BackupArchiver::ARCHIVER_TARGZ;
+				case BackupRequestListener::ARCHIVER_TARGZ;
 					$arch->compress(\Phar::GZ);
 					break;
 
-				case BackupArchiver::ARCHIVER_TARBZ2;
+				case BackupRequestListener::ARCHIVER_TARBZ2;
 					$arch->compress(\Phar::BZ2);
 					break;
 			}
@@ -192,11 +188,13 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$e = $this->fetchLocal();
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
-				$e->debug('Added file "' . (string)$progress[1] . '"');
+				if (($e instanceof events\BackupRequestByCommandEvent) and !is_null($e->getSender())) $e->getSender()->sendPopup(TF::BOLD . TF::GREEN . "File added: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
+				else $e->debug('Added file "' . (string)$progress[1] . '"');
 				break;
 
 			case self::PROGRESS_FILE_IGNORED:
-				$e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
+				if (($e instanceof events\BackupRequestByCommandEvent) and !is_null($e->getSender())) $e->getSender()->sendPopup(TF::BOLD . TF::RED . "File ignored: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
+				else $e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
 				break;
 
 			case self::PROGRESS_ARCHIVE_FILE_CREATED:
@@ -209,31 +207,5 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				break;
 		}
 		return;
-	}
-
-	protected static function replaceFileName(string $name, int $format, request->getBackupTaskUUID() {
-		$name = str_replace('{y}', date('Y'), $name);
-		$name = str_replace('{m}', date('m'), $name);
-		$name = str_replace('{d}', date('d'), $name);
-		$name = str_replace('{h}', date('H'), $name);
-		$name = str_replace('{i}', date('i'), $name);
-		$name = str_replace('{s}', date('s'), $name);
-		switch ($format) {
-			case BackupArchiver::ARCHIVER_ZIP:
-				$format = 'zip';
-				break;
-
-			/*case BackupArchiver::ARCHIVER_TARGZ:
-			case BackupArchiver::ARCHIVER_TARBZ2:
-				$format = 'tar';
-				break;*/
-			
-			default:
-				throw new \InvalidArgumentException('Unknown backup archiver format ID "' . $format . '"');
-				break;
-		}
-		$name = str_replace('{format}', $format, $name);
-		$name = str_replace('{uuid}', $uuid->toString(), $name);
-		return $name;
 	}
 }

@@ -25,7 +25,6 @@ use pocketmine\{
 	plugin\Plugin, 
 	command\CommandSender, 
 	utils\TextFormat as TF, 
-	utils\UUID, 
 	utils\Utils,
 	Player,
 	item\Item
@@ -39,91 +38,83 @@ use function get_class;
 use function md5_file;
 use function phpversion;
 
-class BackupRequestByCommandEvent extends \pocketmine\event\plugin\PluginEvent implements \pocketmine\event\Cancellable, BackupRequest {
+class BackupRequestByCommandEvent extends BackupRequest {
 
 	private const PREFIX = BackupMe::PREFIX;
 	private static $version = 'UNKNOWN';
 	private static $hash = 'UNKNOWN';
 
-	protected $main;
 	protected $sender;
-	protected $uuid;
 
 	public function __construct(Plugin $main, CommandSender $p) {
-		$this->main = $main;
+		parent::__construct($main);
 		$this->sender = $p;
-		$this->uuid = UUID::fromRandom();
-	}
-
-	public function getBackupTaskUUID() : UUID {
-		return $this->uuid;
-	}
-
-	public function getPlugin() : Plugin {
-		return $this->main;
 	}
 
 	public function getRequestCommandSender() : CommandSender {
 		return $this->sender;
 	}
 
-	public function getSender() : CommandSender {
+	final public function getSender() : CommandSender {
 		return $this->getRequestCommandSender();
 	}
 
 	public function emergency($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->emergency($message);
 		else {
-			$message = TF::BOLD . TF::RED . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::BOLD . TF::RED . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
 	public function alert($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->alert($message);
 		else {
-			$message = TF::YELLOW . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::YELLOW . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
 	public function critical($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->critical($message);
 		else {
-			$message = TF::RED . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::RED . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
 	public function error($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->error($message);
 		else {
-			$message = TF::BOLD . TF::DARK_RED . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::BOLD . TF::DARK_RED . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
 	public function warning($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->warning($message);
 		else {
-			$message = TF::BOLD . TF::YELLOW . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::BOLD . TF::YELLOW . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
 	public function notice($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->notice($message);
 		else {
-			$message = TF::BOLD . TF::GOLD . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::BOLD . TF::GOLD . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
 	public function info($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->info($message);
 		else {
-			$message = TF::AQUA . $message . TF::RESET;
+			$message = self::PREFIX . TF::RESET . ' ' . TF::AQUA . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
+
+	private const DEBUG_LEVEL_PROPERTY = 'debug.level';
+
 	public function debug($message) {
 		if (!$this->getSender() instanceof Player) $this->getPlugin()->getLogger()->debug($message);
-		else {
-			$message = TF::BOLD . TF::GRAY . $message . TF::RESET;
+		elseif ((int)$this->getPlugin()->getServer()->getProperty(self::DEBUG_LEVEL_PROPERTY, 1) > 1) {
+			$message = self::PREFIX . TF::RESET . ' ' . TF::BOLD . TF::GRAY . $message . TF::RESET;
 			$this->getSender()->sendMessage($message);
 		}
 	}
@@ -145,10 +136,10 @@ class BackupRequestByCommandEvent extends \pocketmine\event\plugin\PluginEvent i
 
 	public static function setBackupMePluginVersion(BackupMe $main) : void {
 		self::$version = $main->getDescription()->getVersion();
-		self::$hash = $main->isPhar() ? md5_file($main->getPharPath()) : 'UNKNOWN';
+		self::$hash = $main->isPluginCompiled() ? md5_file($main->getPharPath()) : 'UNKNOWN';
 	}
 
-	public static function getErrorLogPages(\Throwable $e, $trace = null) : array {
+	protected static function getErrorLogPages(\Throwable $e, $trace = null) : array {
 		$pages = [];
 		$pages[] = implode(TF::RESET . "\n", [
 			'Error occurred timestamp: ' . (string)time(),

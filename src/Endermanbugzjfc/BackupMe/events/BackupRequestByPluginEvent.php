@@ -21,26 +21,15 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe\events;
 
-use pocketmine\{plugin\Plugin, utils\UUID};
+use pocketmine\plugin\Plugin;
 
-class BackupRequestByPluginEvent extends \pocketmine\event\plugin\PluginEvent implements \pocketmine\event\Cancellable, BackupRequest {
+class BackupRequestByPluginEvent extends BackupRequest {
 
-	protected $main;
-	protected $backupme;
-	protected $uuid;
+	protected $backupme = null;
 
 	public function __construct(Plugin $main, ?string $backupme) {
-		$this->main = $main;
+		parent::__construct($main);
 		$this->backupme = $backupme;
-		$this->uuid = UUID::fromRandom();
-	}
-
-	public function getBackupTaskUUID() : UUID {
-		return $this->uuid;
-	}
-
-	public function getPlugin() : Plugin {
-		return $this->main;
 	}
 
 	public function getBackupMeFilePath() : ?string {
