@@ -86,7 +86,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$log->info('Or use the "backupme" command');
 		$log->info('');
 		$log->debug('Plugin version: ' . $this->getDescription()->getVersion());
-		$log->debug('Plugin PHAR file hash: ' . ($this->isPhar() ? md5_file($this->getFile()) : 'UNKNOWN'));
+		$log->debug('Plugin PHAR file hash: ' . ($this->isPhar() ? md5_file($this->getPharPath()) : 'UNKNOWN'));
 		$log->debug('');
 		$log->info('=================================');
 		return;
