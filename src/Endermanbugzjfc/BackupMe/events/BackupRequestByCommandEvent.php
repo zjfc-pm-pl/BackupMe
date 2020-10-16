@@ -38,7 +38,7 @@ use function get_class;
 use function md5_file;
 use function phpversion;
 
-class BackupRequestByCommandEvent extends BackupRequestByBackupMeEvent {
+class BackupRequestByCommandEvent extends BackupRequest {
 
 	private const PREFIX = BackupMe::PREFIX;
 	private static $version = 'UNKNOWN';
@@ -133,7 +133,7 @@ class BackupRequestByCommandEvent extends BackupRequestByBackupMeEvent {
 
 	public static function setBackupMePluginVersion(BackupMe $main) : void {
 		self::$version = $main->getDescription()->getVersion();
-		self::$hash = $main->isPhar() ? md5_file($main->getPharPath()) : 'UNKNOWN';
+		self::$hash = $main->isPluginCompiled() ? md5_file($main->getPharPath()) : 'UNKNOWN';
 	}
 
 	protected static function getErrorLogPages(\Throwable $e, $trace = null) : array {

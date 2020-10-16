@@ -81,12 +81,12 @@ class Utils {
         $name = str_replace('{i}', date('i'), $name);
         $name = str_replace('{s}', date('s'), $name);
         switch ($format) {
-            case BackupArchiver::ARCHIVER_ZIP:
+            case BackupRequestListener::ARCHIVER_ZIP:
                 $format = 'zip';
                 break;
 
-            /*case BackupArchiver::ARCHIVER_TARGZ:
-            case BackupArchiver::ARCHIVER_TARBZ2:
+            /*case BackupRequestListener::ARCHIVER_TARGZ:
+            case BackupRequestListener::ARCHIVER_TARBZ2:
                 $format = 'tar';
                 break;*/
             

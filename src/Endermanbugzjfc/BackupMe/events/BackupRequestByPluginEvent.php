@@ -23,7 +23,7 @@ namespace Endermanbugzjfc\BackupMe\events;
 
 use pocketmine\plugin\Plugin;
 
-class BackupRequestByPluginEvent extends BackupRequestByBackupMeEvent {
+class BackupRequestByPluginEvent extends BackupRequest {
 
 	protected $backupme = null;
 

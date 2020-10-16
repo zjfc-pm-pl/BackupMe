@@ -108,37 +108,37 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		$this->checker->resume();
 	}
 
-	public function setChecker(BackupMeFileCheckTask $checker) : BackupArchiver {
+	public function setChecker(BackupMeFileCheckTask $checker) : BackupRequestListener {
 		$this->checker = $checker;
 		return $this;
 	}
 
-	public function setSource(string $path) : BackupArchiver {
+	public function setSource(string $path) : BackupRequestListener {
 		$this->source = $path;
 		return $this;
 	}
 
-	public function setDest(string $path) : BackupArchiver {
+	public function setDest(string $path) : BackupRequestListener {
 		$this->dest = $path;
 		return $this;
 	}
 
-	public function setName(string $name) : BackupArchiver {
+	public function setName(string $name) : BackupRequestListener {
 		$this->name = $name;
 		return $this;
 	}
 
-	public function setFormat(int $format) : BackupArchiver {
+	public function setFormat(int $format) : BackupRequestListener {
 		$this->format = $format;
 		return $this;
 	}
 
-	public function setIgnoreDiskSpace(bool $ignorediskspace) : BackupArchiver {
+	public function setIgnoreDiskSpace(bool $ignorediskspace) : BackupRequestListener {
 		$this->ignorediskspace = $ignorediskspace;
 		return $this;
 	}
 
-	public function setBackupIgnoreFilePath(string $path) : BackupArchiver {
+	public function setBackupIgnoreFilePath(string $path) : BackupRequestListener {
 		$this->ignorefilepath = $path;
 		return $this;
 	}

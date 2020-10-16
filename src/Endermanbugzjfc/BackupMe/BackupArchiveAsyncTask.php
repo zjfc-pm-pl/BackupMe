@@ -27,8 +27,6 @@ use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
 use function substr;
 use function scandir;
-use function basename;
-use function dirname;
 use function microtime;
 use function unlink;
 use function is_dir;
@@ -57,7 +55,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	public function __construct(events\BackupRequest $request, string $source, string $dest) {
 		$this->dest = $dest . (!(($dirsep = substr($source, -1, 1)) === '/' or $dirsep === "\\") ? DIRECTORY_SEPARATOR : '') . $request->getBackupArchiveFileName();
 		$this->source = $source;
-		$this->format = $request->getBackupArchiverFormat();
+		$this->format = $request->getBackupRequestListenerFormat();
 		$this->ignore = $request->getBackupIgnoreContent();
 		$this->storeLocal($request);
 		return;
@@ -66,7 +64,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	public function onRun() : void {
 		$time = microtime(true);
 		switch ($this->format) {
-			case BackupArchiver::ARCHIVER_ZIP:
+			case BackupRequestListener::ARCHIVER_ZIP:
 				$arch = (new \ZipArchive());
 				if ($arch->open($this->dest, \ZipArchive::CREATE) !== true ) {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Archiver cannot open file "' . $this->dest . '"')));
@@ -74,8 +72,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				}
 				break;
 
-			/*case BackupArchiver::ARCHIVER_TARGZ:
-			case BackupArchiver::ARCHIVER_TARBZ2:
+			/*case BackupRequestListener::ARCHIVER_TARGZ:
+			case BackupRequestListener::ARCHIVER_TARBZ2:
 				try {
 					$arch = (new \PharData($this->dest));
 				} catch (\Throwable $ero) {
@@ -104,15 +102,15 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$this->publishProgress([self::PROGRESS_COMPRESSING_ARCHIVE]);
 		try {
 			switch ($this->format) {
-				case BackupArchiver::ARCHIVER_ZIP:
+				case BackupRequestListener::ARCHIVER_ZIP:
 					$arch->close();
 					break;
 
-				case BackupArchiver::ARCHIVER_TARGZ;
+				case BackupRequestListener::ARCHIVER_TARGZ;
 					$arch->compress(\Phar::GZ);
 					break;
 
-				case BackupArchiver::ARCHIVER_TARBZ2;
+				case BackupRequestListener::ARCHIVER_TARBZ2;
 					$arch->compress(\Phar::BZ2);
 					break;
 			}
