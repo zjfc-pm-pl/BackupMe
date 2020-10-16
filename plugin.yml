@@ -1,7 +1,23 @@
 name: BackupMe
 author: Endermanbugzjfc
 api: [3.0.0]
-version: 1.0.0
+version: 1.0.1
 main: Endermanbugzjfc\BackupMe\BackupMe
 description: Implements the "Pterodactyl backup system" but can also backup your server without restarting the server and for mainly made those who don't use Pterodactyl to use
 os: linux
+commands:
+  backupme:
+    description: Backup server
+    permission: 'backupme.cmd.backup'
+    aliases: [backup, backup-me]
+permissions:
+  backupme:
+    default: op
+    children:
+      backupme.cmd:
+        description: Permission to use all the BackupMe plugin commands
+        default: op
+        children:
+          backupme.cmd.backup:
+            description: Permission to start a backup with command
+            default: op

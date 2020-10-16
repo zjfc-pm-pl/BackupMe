@@ -1,4 +1,5 @@
 # BackupMe
+Implements the "Pterodactyl backup system" but can also backup your server without restarting it and mainly made for those who don't use Pterodactyl to use
 **This plugin implements a backup system that works like the "Pterodactyl backup system"**
 # Configuration
 ## Options
@@ -6,7 +7,6 @@
 | ------ | ----------- |
 | `true-this-or-dream-might-quit-youtube` | The plugin power switch. **If this option is false, the plugin will disable on load.** |
 | `backup-name` | The name format that the backup archive file will be used, please see the available name format tag list! |
-| `smart-backup-ignorer` | Let the system to decide whether a file should be ignored or not, please see the smart ignore condition list! |
 | `file-checker-interval` | The interval in ticks between every time the file checker checks if a `backup.me` is created. |
 | `ignore-disk-space` | Continue to do a server backup **even if the server disk is not having enough space.** |
 ## Name format tags
@@ -47,8 +47,33 @@ You can input certain rules to prevent the backup archiver from adding that file
 | `!worlds/*` | None of all in any of the `worlds` directory |
 
 # Start backup
-Create a file name `backup.me` at the server root directory, when the file checker finds it, a server backup will be started.
+Create a file name `backup.me` at the server root directory or use the [`/backupme` command]() from console or in-game. When the file checker finds it, a server backup will be started.
 
 **Please do not turn off the server during the backup**
 
-If a message with the backup task used time, the total amount of added files and ignored files popup. It means that the backup task is **successfully completed**, you can do whatever you want at that time. The backup archive file will be generated at the server root directory *(Where you create the `backup.me` file)*
+If a message with the backup task used time, the total amount of added files and ignored files popup. It means that the backup task is **completed**, you can do whatever you want at that time. The backup archive file will be generated at the server root directory *(Where you create the `backup.me` file)*
+
+# Permissions
+| Permission | Command |
+| ---------- | ------- |
+| `backupme.cmd.backup` | `/backupme` |
+
+# API
+## Custom backup requests
+
+### Event
+
+** Other plugins can manually start a server backup by calling a `\Endermanbugzjfc\BackupMe\events\BackupRequestEvent`** event**
+
+### Customize
+
+| Member function name | Action |
+| --------------- | ------ |
+| `setBackupIgnoreContent(string $content)` | Overwrite the original backup ignore file contents |
+| `setName(string $name)` | Overwrite the original backup archive file name |
+| `setFormat(int $format)` | Overwrite the original backup archiver format |
+
+**Available archiver formats (All in `\Endermanbugzjfc\BackupMe\BackupRequestListener`):**
+- `BackupRequestListener::ZIP`
+- `BackupRequestListener::TARGZ`
+- `BackupRequestListener::TARBZ2`

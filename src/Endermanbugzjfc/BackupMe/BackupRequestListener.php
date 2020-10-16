@@ -30,7 +30,7 @@ use function is_null;
 use function round;
 use function microtime;
 
-class BackupArchiver implements \pocketmine\event\Listener {
+class BackupRequestListener implements \pocketmine\event\Listener {
 
 	public const ARCHIVER_ZIP = 0;
 	public const ARCHIVER_TARGZ = 1;
@@ -42,18 +42,18 @@ class BackupArchiver implements \pocketmine\event\Listener {
 	protected $dest;
 	protected $name = 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}';
 	protected $format = self::ARCHIVER_ZIP;
-	protected $smartignorer = false;
 	protected $ignorediskspace = false;
+	protected $ignorefilepath;
 
 	public function __construct(\pocketmine\plugin\Plugin $main) {
 		$this->main = $main;
 	}
 
-	public function requestByPlugin(events\BackupRequestByPluginEvent $e) : void {
+	public function request(events\BackupRequest $e) : void {
 		if ($e->isCancelled()) return;
 		$this->pauseChecker();
-		$this->main->getLogger()->debug('File checker pasued');
-		$log = $e->getPlugin()->getLogger();
+		$log = $e;
+		$log->debug('File checker pasued');
 		$log->info('Server backup requested...');
 		$log->info('Checking disk space...');
 		if (($free = (int)disk_free_space($this->dest)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
@@ -67,19 +67,22 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
-		$e->getPlugin()->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->getSource(), $this->getDest(), $this->getName(), $this->getFormat(), $this->doSmartIgnore(), (file_exists($e->getPlugin()->getDataFolder() . 'backupignore.gitignore') ? $e->getPlugin()->getDataFolder() . 'backupignore.gitignore' : null)));
+		if (is_null($e->getBackupIgnoreContent()) and file_exists($this->ignorefilepath)) $e->setBackupIgnoreContent(Utils::filterIgnoreFileComments(file_get_contents($this->ignorefilepath)));
+		if (is_null($e->getFormat())) $e->setFormat($this->getFormat());
+		if (is_null($e->getName())) $e->setName($this->getName());
+		$this->main->getServer()->getAsyncPool()->submitTask(new BackupArchiveAsyncTask($e, $this->getSource(), $this->getDest()));
+		return;
 	}
 
 	public function stop(events\BackupStopEvent $e) : void {
 		if ($e->isCancelled()) return;
-		$log = $this->main->getLogger();
+		$log = $e->getRequest();
 		if (!is_null($file = ($e->getRequest()->getBackupMeFilePath() ?? null))) {
 			@unlink($file);
 			$log->debug('Deleted file "' . $file . '"');
 		}
 
 		if ($e instanceof events\BackupAbortEvent) {
-			var_dump(get_class($ero));
 			switch ($e->getReason()) {
 				case events\BackupAbortEvent::REASON_COMPRESS_FAILED:
 					$log->critical('>> !BACKUP FAILURED! << Exception encounted when compressing the backup archive file');
@@ -107,38 +110,38 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		$this->checker->resume();
 	}
 
-	public function setChecker(BackupMeFileCheckTask $checker) : BackupArchiver {
+	public function setChecker(BackupMeFileCheckTask $checker) : BackupRequestListener {
 		$this->checker = $checker;
 		return $this;
 	}
 
-	public function setSource(string $path) : BackupArchiver {
+	public function setSource(string $path) : BackupRequestListener {
 		$this->source = $path;
 		return $this;
 	}
 
-	public function setDest(string $path) : BackupArchiver {
+	public function setDest(string $path) : BackupRequestListener {
 		$this->dest = $path;
 		return $this;
 	}
 
-	public function setName(string $name) : BackupArchiver {
+	public function setName(string $name) : BackupRequestListener {
 		$this->name = $name;
 		return $this;
 	}
 
-	public function setFormat(int $format) : BackupArchiver {
+	public function setFormat(int $format) : BackupRequestListener {
 		$this->format = $format;
 		return $this;
 	}
 
-	public function setSmartIgnore(bool $smartignorer) : BackupArchiver {
-		$this->smartignorer = $smartignorer;
+	public function setIgnoreDiskSpace(bool $ignorediskspace) : BackupRequestListener {
+		$this->ignorediskspace = $ignorediskspace;
 		return $this;
 	}
 
-	public function setIgnoreDiskSpace(bool $ignorediskspace) : BackupArchiver {
-		$this->ignorediskspace = $ignorediskspace;
+	public function setBackupIgnoreFilePath(string $path) : BackupRequestListener {
+		$this->ignorefilepath = $path;
 		return $this;
 	}
 
@@ -161,11 +164,11 @@ class BackupArchiver implements \pocketmine\event\Listener {
 		return $this->format;
 	}
 
-	public function doSmartIgnore() : bool {
-		return $this->smartignorer;
-	}
-
 	public function doIgnoreDiskSpace() : bool {
 		return $this->ignorediskspace;
+	}
+
+	public function getBackupIgnoreFilePath() : string {
+		return $this->ignorefilepath;
 	}
 }
