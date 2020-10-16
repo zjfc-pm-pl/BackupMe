@@ -27,6 +27,8 @@ use pocketmine\utils\TextFormat as TF;
 use function dirname;
 use function file_put_contents;
 use function file_exists;
+use function substr;
+use function strlen;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -84,7 +86,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$log->info('Or use the "backupme" command');
 		$log->info('');
 		$log->debug('Plugin version: ' . $this->getDescription()->getVersion());
-		$log->debug('Plugin PHAR file hash: ' . ($this->isPhar() ? md5_file($this->getFile()) : 'UNKNOWN'));
+		$log->debug('Plugin PHAR file hash: ' . ($this->isPhar() ? md5_file($this->getPharPath()) : 'UNKNOWN'));
 		$log->debug('');
 		$log->info('=================================');
 		return;
@@ -117,7 +119,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 	}
 
 	public function getPharPath() : string {
-		return $this->getFile();
+		return $this->isPluginCompiled() ? substr($this->getFile(), 6, strlen(substr($this->getFile(), 6)) - 1) : $this->getFile();
 	}
 
 	public function isPluginCompiled() : bool {
