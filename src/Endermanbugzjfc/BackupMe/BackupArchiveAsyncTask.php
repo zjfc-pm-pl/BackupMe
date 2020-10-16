@@ -90,7 +90,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->dest]);
 		$savedIgnores = self::cleanGitignore($this->source);
 		if (isset($this->ignore)) {
-			require 'libs/vendor/autoload.php';
 			@file_put_contents($this->source . '.gitignore', $this->ignore);
 			$ignore = (new GitIgnoreChecker($this->source));
 		}
