@@ -72,7 +72,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				}
 				break;
 
-			/*case BackupRequestListener::ARCHIVER_TARGZ:
+			case BackupRequestListener::ARCHIVER_TARGZ:
 			case BackupRequestListener::ARCHIVER_TARBZ2:
 				try {
 					$arch = (new \PharData($this->dest));
@@ -80,7 +80,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException($ero));
 					return;
 				}
-				break;*/
+				break;
 			
 			default:
 				$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Unknown backup archiver format ID "' . $this->format . '"')));
@@ -108,10 +108,12 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 				case BackupRequestListener::ARCHIVER_TARGZ;
 					$arch->compress(\Phar::GZ);
+					@unlink($this->dest);
 					break;
 
 				case BackupRequestListener::ARCHIVER_TARBZ2;
 					$arch->compress(\Phar::BZ2);
+					@unlink($this->dest);
 					break;
 			}
 		} catch (\Throwable $ero) {}
@@ -148,7 +150,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				break;
 
 			case self::RESULT_STOPPED:
-				if (!is_null($result[4])) (new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
+				var_dump($result);
+				if (!is_null($ero = $result[4])) (new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
 				else {
 					$e->debug('Compress successed');
 					(new events\BackupStopEvent($e, $result[1], $result[2], $result[3]))->call();

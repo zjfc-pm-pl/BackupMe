@@ -30,6 +30,7 @@ class BackupMeFileCheckTask extends \pocketmine\scheduler\Task {
 	protected $main;
 	protected $path;
 	protected $paused = false;
+	protected $file = 'backup.me';
 
 	public function __construct(Plugin $main, string $path) {
 		$this->main = $main;
@@ -38,8 +39,8 @@ class BackupMeFileCheckTask extends \pocketmine\scheduler\Task {
 
 	final public function onRun(int $ct) : void {
 		if ($this->isPaused()) return;
-		if (!file_exists($this->getPath() . 'backup.me')) return;
-		(new events\BackupRequestByPluginEvent($this->getPlugin(), $this->getPath() . 'backup.me'))->call();
+		if (!file_exists($this->getPath() . $this->getBackupMeFile())) return;
+		(new events\BackupRequestByPluginEvent($this->getPlugin(), $this->getPath() . $this->getBackupMeFile()))->call();
 		return;
 	}
 
@@ -55,13 +56,22 @@ class BackupMeFileCheckTask extends \pocketmine\scheduler\Task {
 		return $this->paused;
 	}
 
-	public function pause() : BackupMeFileCheckTask {
+	public function pause() {
 		$this->paused = true;
 		return $this;
 	}
 
-	public function resume() : BackupMeFileCheckTask {
+	public function resume() {
 		$this->paused = false;
 		return $this;
+	}
+
+	public function setBackupMeFile(string $file) {
+		$this->file = $file;
+		return $this;
+	}
+
+	public function getBackupMeFile() : string {
+		return $this->file;
 	}
 }

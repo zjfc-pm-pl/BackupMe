@@ -5,7 +5,7 @@ Implements the "Pterodactyl backup system" but can also backup your server witho
 ## Options
 | Option | Description |
 | ------ | ----------- |
-| `true-this-or-dream-might-quit-youtube` | The plugin power switch. **If this option is false, the plugin will disable on load.** |
+| `enable-plugin` | The plugin power switch. **If this option is false, the plugin will disable on load.** |
 | `backup-name` | The name format that the backup archive file will be used, please see the available name format tag list! |
 | `file-checker-interval` | The interval in ticks between every time the file checker checks if a `backup.me` is created. |
 | `ignore-disk-space` | Continue to do a server backup **even if the server disk is not having enough space.** |
@@ -63,7 +63,7 @@ If a message with the backup task used time, the total amount of added files and
 
 ### Event
 
-** Other plugins can manually start a server backup by calling a `\Endermanbugzjfc\BackupMe\events\BackupRequestEvent`** event**
+**Other plugins can manually start a server backup by calling a `\Endermanbugzjfc\BackupMe\events\BackupRequestEvent` event**
 
 ### Customize
 

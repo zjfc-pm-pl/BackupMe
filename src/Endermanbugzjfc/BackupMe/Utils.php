@@ -36,9 +36,7 @@ use function strpos;
 use function str_replace;
 use function date;
 
-class Utils {
-
-	private function __construct() {}
+abstract class Utils {
 
 	public static function serializeException(\Throwable $ero) : string {
 		$traceProperty = (new \ReflectionClass('Exception'))->getProperty('trace');
@@ -85,10 +83,10 @@ class Utils {
                 $format = 'zip';
                 break;
 
-            /*case BackupRequestListener::ARCHIVER_TARGZ:
+            case BackupRequestListener::ARCHIVER_TARGZ:
             case BackupRequestListener::ARCHIVER_TARBZ2:
                 $format = 'tar';
-                break;*/
+                break;
             
             default:
                 throw new \InvalidArgumentException('Unknown backup archiver format ID "' . $format . '"');
