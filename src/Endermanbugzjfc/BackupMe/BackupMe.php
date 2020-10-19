@@ -29,6 +29,7 @@ use function file_put_contents;
 use function file_exists;
 use function substr;
 use function strlen;
+use function extension_loaded;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -77,7 +78,11 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 
 		$conf->save();
 		$conf->reload();
-		return $conf->get('enable-plugin', true);
+		if (($conf->get('archiver-format', BackupRequestListener::ARCHIVER_ZIP) === BackupRequestListener::ARCHIVER_TARBZ2) and !extension_loaded('bz2')) {
+			$this->getLogger()->critical('The selected archiver format is unavailable because the extension "bz2" is not loaded!');
+			$false = false;
+		}
+		return $false ?? $conf->get('enable-plugin', true);
 	}
 
 	private function displayStartupLogs() : void {

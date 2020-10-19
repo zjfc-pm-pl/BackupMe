@@ -66,20 +66,20 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		switch ($this->format) {
 			case BackupRequestListener::ARCHIVER_ZIP:
 				$arch = (new \ZipArchive());
-				if ($arch->open($this->dest, \ZipArchive::CREATE) !== true ) {
+				if ($arch->open($this->dest, \ZipArchive::CREATE) !== true) return;/*{
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Archiver cannot open file "' . $this->dest . '"')));
 					return;
-				}
+				}*/
 				break;
 
 			case BackupRequestListener::ARCHIVER_TARGZ:
 			case BackupRequestListener::ARCHIVER_TARBZ2:
-				try {
+				// try {
 					$arch = (new \PharData($this->dest));
-				} catch (\Throwable $ero) {
+				/*} catch (\Throwable $ero) {
 					$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException($ero));
 					return;
-				}
+				}*/
 				break;
 			
 			default:
@@ -100,7 +100,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		@unlink($this->source . '.gitignore');
 		foreach ($savedIgnores as $path => $content) file_put_contents($path, $content);
 		$this->publishProgress([self::PROGRESS_COMPRESSING_ARCHIVE]);
-		try {
+		// try {
 			switch ($this->format) {
 				case BackupRequestListener::ARCHIVER_ZIP:
 					$arch->close();
@@ -116,8 +116,8 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					@unlink($this->dest);
 					break;
 			}
-		} catch (\Throwable $ero) {}
-		$this->setResult([self::RESULT_STOPPED, $time, $ttfiles, $ttignored, (isset($ero) ? Utils::serializeException($ero) : null)]);
+		 // } catch (\Throwable $ero) {}
+		$this->setResult([self::RESULT_STOPPED, $time, $ttfiles, $ttignored/*, (isset($ero) ? Utils::serializeException($ero) : null)*/]); 
 		return;
 	}
 
@@ -144,18 +144,18 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$fridge = $this->fetchLocal(); // Don't judge name lol
 		$e = $fridge;
 		switch ((int)$result[0]) {
-			case self::RESULT_CANNOT_CREATE_ACHIVE_FILE:
+			/*case self::RESULT_CANNOT_CREATE_ACHIVE_FILE:
 				$ero = @unserialize($result[1]);
 				(new events\BackupAbortEvent($e, events\BackupAbortEvent::RESULT_CANNOT_CREATE_ACHIVE_FILE, $ero ?? null))->call();
-				break;
+				break;*/
 
 			case self::RESULT_STOPPED:
-				var_dump($result);
-				if (!is_null($ero = $result[4])) (new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
-				else {
+				/*var_dump($result);
+				if (!is_null($ero = unserialize($result[4]))) (new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_COMPRESS_FAILED, $ero))->call();
+				else {*/
 					$e->debug('Compress successed');
 					(new events\BackupStopEvent($e, $result[1], $result[2], $result[3]))->call();
-				}
+				// }
 				break;
 		}
 		return;
@@ -163,7 +163,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 	protected function scanIn($arch, ?GitIgnoreChecker $ignore, string $dir, int &$ttfiles, int &$ttignored) : void {
 		$dirs = array_filter(scandir($dir), function(string $dir) : bool {return !($dir === '.' or $dir === '..');});
-		foreach ($dirs as $dirorfile) try {
+		foreach ($dirs as $dirorfile) /*try {*/
 			switch (is_dir($dir . $dirorfile)) {
 				case false:
 					if (($ignore instanceof GitIgnoreChecker) and ($ignore->isPathIgnored(substr($dir, strlen($ignore->getRepository()->getPath())) . $dirorfile))) {
@@ -181,9 +181,9 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 					$this->scanIn($arch, $ignore, $dir . $dirorfile . DIRECTORY_SEPARATOR, $ttfiles, $ttignored);
 					break;
 			}
-		} catch (\Throwable $ero) {
+		/*} catch (\Throwable $ero) {
 			$this->publishProgress([self::PROGRESS_EXCEPTION_ENCOUNTED_WHEN_ADDING_FILE, (string)$dirorfile]);
-		}
+		}*/
 		return;
 	}
 
