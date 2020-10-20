@@ -31,7 +31,7 @@ class BackupAbortEvent extends BackupStopEvent {
 	protected $reason = 0;
 	protected $exception;
 
-	public function __construct(BackupRequest $e, int $reason, ?Throwable $ero = null) {
+	public function __construct(BackupRequest $e, int $reason, ?array $ero = null) {
 		parent::__construct($e, $reason, $ero ?? null);
 		$this->reason = $reason;
 		$this->exception = $ero;
@@ -41,7 +41,7 @@ class BackupAbortEvent extends BackupStopEvent {
 		return $this->reason;
 	}
 
-	public function getException() : ?\Throwable {
+	public function getException() : ?array {
 		return $this->exception;
 	}
 

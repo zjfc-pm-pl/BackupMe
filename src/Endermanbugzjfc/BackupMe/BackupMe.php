@@ -29,6 +29,7 @@ use function file_put_contents;
 use function file_exists;
 use function substr;
 use function strlen;
+use function extension_loaded;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -45,13 +46,14 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		events\BackupRequestByCommandEvent::setBackupMePluginVersion($this);
 		$this->getServer()->getPluginManager()->registerEvents($listener = (new BackupRequestListener($this)), $this);
 		$checker = (new BackupMeFileCheckTask($this, $this->getSafeServerDataPath()));
-		$listener->setChecker($checker)
-				 ->setSource((string)(/*$this->getConfig()->get('backup-inside', $this->getSafeServerDataPath())*/$this->getSafeServerDataPath()))
-				 ->setDest((string)(/*$this->getConfig()->get('backup-into', $this->getSafeServerDataPath())*/$this->getSafeServerDataPath()))
-				 ->setFormat((int)($this->getConfig()->get('archiver-format', BackupRequestListener::ARCHIVER_ZIP)))
-				 ->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')))
-				 ->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)))
-				 ->setBackupIgnoreFilePath($this->getDataFolder() . 'backupignore.gitignore');
+		$checker->setBackupMeFile($this->getConfig()->get('check-for-file', 'backup.me'));
+		$listener->setChecker($checker);
+		$listener->setSource((string)(/*$this->getConfig()->get('backup-inside', $this->getSafeServerDataPath())*/$this->getSafeServerDataPath()));
+		$listener->setDest((string)(/*$this->getConfig()->get('backup-into', $this->getSafeServerDataPath())*/$this->getSafeServerDataPath()));
+		$listener->setFormat((int)($this->getConfig()->get('archiver-format', BackupRequestListener::ARCHIVER_ZIP)));
+		$listener->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')));
+		$listener->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)));
+		$listener->setBackupIgnoreFilePath($this->getDataFolder() . 'backupignore.gitignore');
 		$this->getScheduler()->scheduleRepeatingTask($checker, (int)$this->getConfig()->get('file-checker-interval', 3) * 20);
 		return;
 	}
@@ -66,16 +68,21 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$all = $conf->getAll();
 		foreach ($all as $k => $v) $conf->remove($k);
 
-		$conf->set('true-this-or-dream-might-quit-youtube', (bool)($all['true-this-or-dream-might-quit-youtube'] ?? true));
-		// $conf->set('archiver-format', (int)($all['archiver-format'] ?? BackupRequestListener::ARCHIVER_ZIP));
+		$conf->set('enable-plugin', (bool)($all['enable-plugin'] ?? ($all['true-this-or-dream-might-quit-youtube'] ?? true)));
+		$conf->set('archiver-format', (int)($all['archiver-format'] ?? BackupRequestListener::ARCHIVER_ZIP));
 		$conf->set('backup-name', (string)($all['backup-name'] ?? 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}'));
 		$conf->set('file-checker-interval', (int)($all['file-checker-interval'] ?? 3));
 		$conf->set('ignore-disk-space', (bool)($all['ignore-disk-space'] ?? false));
+		$conf->set('check-for-file', (string)($all['check-for-file'] ?? 'backup.me'));
 		// $conf->set('archive-empty-dir', (bool)($all['archive-empty-dir'] ?? false));
 
 		$conf->save();
 		$conf->reload();
-		return $conf->get('true-this-or-dream-might-quit-youtube', true);
+		if (($conf->get('archiver-format', BackupRequestListener::ARCHIVER_ZIP) === BackupRequestListener::ARCHIVER_TARBZ2) and !extension_loaded('bz2')) {
+			$this->getLogger()->critical('The selected archiver format is unavailable because the extension "bz2" is not loaded!');
+			$false = false;
+		}
+		return $false ?? $conf->get('enable-plugin', true);
 	}
 
 	private function displayStartupLogs() : void {
