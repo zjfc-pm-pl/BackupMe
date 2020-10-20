@@ -5,10 +5,18 @@ Implements the "Pterodactyl backup system" but can also backup your server witho
 ## Options
 | Option | Description |
 | ------ | ----------- |
-| `true-this-or-dream-might-quit-youtube` | The plugin power switch. **If this option is false, the plugin will disable on load.** |
+| `enable-plugin` | The plugin power switch. **If this option is false, the plugin will disable on load.** |
+| `archiver-format` | The **archiver format** that will be use |
 | `backup-name` | The name format that the backup archive file will be used, please see the available name format tag list! |
-| `file-checker-interval` | The interval in ticks between every time the file checker checks if a `backup.me` is created. |
+| `file-checker-interval` | The interval in seconds between every time the file checker checks if a `backup.me` is created. |
 | `ignore-disk-space` | Continue to do a server backup **even if the server disk is not having enough space.** |
+| `check-for-file` | File name for the file checker to check _(Default `backup.me`)_ |
+## Available archiver formats
+| ID | **Format** |
+| -- | ------ |
+| `0` | **Zip** |
+| `1` | **Gz** |
+| `2` | **Bzip2** |
 ## Name format tags
 | Tag | Replacement |
 | --- | ----------- |
@@ -63,7 +71,7 @@ If a message with the backup task used time, the total amount of added files and
 
 ### Event
 
-** Other plugins can manually start a server backup by calling a `\Endermanbugzjfc\BackupMe\events\BackupRequestEvent`** event**
+**Other plugins can manually start a server backup by calling a `\Endermanbugzjfc\BackupMe\events\BackupRequestEvent` event**
 
 ### Customize
 
