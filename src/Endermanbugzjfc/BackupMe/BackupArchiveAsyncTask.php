@@ -21,7 +21,7 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
-use pocketmine\{Server, utils\TextFormat as TF};
+use pocketmine\{Server, Player, utils\TextFormat as TF};
 
 use Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
@@ -83,7 +83,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 				break;
 			
 			default:
-				$this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Unknown backup archiver format ID "' . $this->format . '"')));
+				// $this->setResult(self::RESULT_CANNOT_CREATE_ACHIVE_FILE, Utils::serializeException(new \InvalidArgumentException('Unknown backup archiver format ID "' . $this->format . '"')));
 				return;
 				break;
 		}
@@ -191,12 +191,12 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$e = $this->fetchLocal();
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
-				if (($e instanceof events\BackupRequestByCommandEvent) and !is_null($e->getSender())) $e->getSender()->sendPopup(TF::BOLD . TF::GREEN . "File added: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
+				if (($e instanceof events\BackupRequestByCommandEvent) and ($e->getSender() instanceof Player)) $e->getSender()->sendPopup(TF::BOLD . TF::GREEN . "File added: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
 				else $e->debug('Added file "' . (string)$progress[1] . '"');
 				break;
 
 			case self::PROGRESS_FILE_IGNORED:
-				if (($e instanceof events\BackupRequestByCommandEvent) and !is_null($e->getSender())) $e->getSender()->sendPopup(TF::BOLD . TF::RED . "File ignored: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
+				if (($e instanceof events\BackupRequestByCommandEvent) and ($e->getSender() instanceof Player)) $e->getSender()->sendPopup(TF::BOLD . TF::RED . "File ignored: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
 				else $e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
 				break;
 
