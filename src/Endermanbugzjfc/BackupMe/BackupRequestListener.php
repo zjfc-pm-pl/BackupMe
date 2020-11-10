@@ -38,8 +38,8 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 
 	protected $main;
 	protected $checker;
-	protected $source;
-	protected $dest;
+	protected $source = null;
+	protected $dest = null;
 	protected $name = 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}';
 	protected $format = self::ARCHIVER_ZIP;
 	protected $ignorediskspace = false;
@@ -59,7 +59,6 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		if (($free = (int)disk_free_space($this->dest)) < ($takes = disk_total_space($this->source) - (int)disk_free_space($this->source))) {
 			$log->emergency('Disk space is not enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 			if (!$this->doIgnoreDiskSpace()) {
-				$log->critical('Abort backup task due to the lacking of disk space');
 				(new events\BackupAbortEvent($e, events\BackupAbortEvent::REASON_DISK_SPACE_LACK))->call();
 				return;
 			}
@@ -84,14 +83,18 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 
 		if ($e instanceof events\BackupAbortEvent) {
 			switch ($e->getReason()) {
-				case events\BackupAbortEvent::REASON_COMPRESS_FAILED:
+				/*case $e::REASON_COMPRESS_FAILED:
 					$log->critical('>> !BACKUP FAILURED! << Exception encounted when compressing the backup archive file');
 					if (($ero = $e->getException()) instanceof \Throwable) $log->logException($ero);
 					break;
 
-				case events\BackupAbortEvent::REASON_CANNOT_CREATE_ACHIVE_FILE:
+				case $e::REASON_CANNOT_CREATE_ACHIVE_FILE:
 					$log->emergency('>> !BACKUP FAILURED! << Exception encounted when creating the backup archive file');
 					if (($ero = $e->getException()) instanceof \Throwable) $log->logException($ero);
+					break;*/
+
+				case $e::REASON_DISK_SPACE_LACK:
+					$log->critical('Abort backup task due to the lacking of disk space');
 					break;
 			}
 			return;
@@ -102,11 +105,11 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		$log->debug('File checker resumed');
 	}
 
-	protected function pauseChecker() : void {
+	protected function pauseChecker() {
 		$this->checker->pause();
 	}
 
-	protected function resumeChecker() : void {
+	protected function resumeChecker() {
 		$this->checker->resume();
 	}
 

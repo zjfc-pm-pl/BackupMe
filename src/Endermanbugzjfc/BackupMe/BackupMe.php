@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
 use pocketmine\command\{Command, CommandSender};
-use pocketmine\utils\TextFormat as TF;
+use pocketmine\utils\{TextFormat as TF, Utils};
 
 use function dirname;
 use function file_put_contents;
@@ -37,11 +37,14 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 
 	public const PREFIX = TF::BLUE . '[' . TF::BOLD . TF::DARK_AQUA . 'BackupMe' . TF::RESET . TF::BLUE  .']';
 	
+	private static $instance = null;
+	
 	public function onEnable() : void {
 		if (!$this->initConfig()) {
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
 		}
+		self::$instance = $this;
 		$this->displayStartupLogs();
 		events\BackupRequestByCommandEvent::setBackupMePluginVersion($this);
 		$this->getServer()->getPluginManager()->registerEvents($listener = (new BackupRequestListener($this)), $this);
@@ -75,6 +78,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		$conf->set('ignore-disk-space', (bool)($all['ignore-disk-space'] ?? false));
 		$conf->set('check-for-file', (string)($all['check-for-file'] ?? 'backup.me'));
 		// $conf->set('archive-empty-dir', (bool)($all['archive-empty-dir'] ?? false));
+		$conf->set('operation-log', (bool)($all['operation-log'] ?? false));
 
 		$conf->save();
 		$conf->reload();
@@ -100,7 +104,7 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 	}
 
 	private function saveIgnoreFile() : void {
-		if (file_exists($this->getDataFolder() . 'backupignore.gitignore')) return;
+		if (Utils::getOS() === Utils::OS_LINUX) if (file_exists($this->getDataFolder() . 'backupignore.gitignore')) return;
 		file_put_contents($this->getDataFolder() . 'backupignore.gitignore', join("\n", [
 			'# This file is using the gitignore syntax, enjoy!',
 			'# Specify filepatterns you want the backup file archiver to ignore.',
@@ -131,5 +135,13 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 
 	public function isPluginCompiled() : bool {
 		return $this->isPhar();
+	}
+	
+	public function allowOperationLog() : book {
+		return (bool)$this->getConfig()->get('operation-log', false);
+	}
+	
+	public static function getInstance() : ?self {
+		return self::$instance;
 	}
 }
