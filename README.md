@@ -1,5 +1,5 @@
 # BackupMe
-<img src="https://raw.githubusercontent.com/Endermanbugzjfc/BackupMe/main/icon.png" height="128" width="128" align="left"></img><img src="https://poggit.pmmp.io/ci.shield/Endermanbugzjfc/BackupMe/~" align="left"></img><img src="https://img.shields.io/github/downloads/Endermanbugzjfc/BackupMe/total" align="left"><img src="https://img.shields.io/github/issues/Endermanbugzjfc/BackupMe"></br>
+<a href="https://github.com/Endermanbugzjfc/BackupMe/"><img src="https://raw.githubusercontent.com/Endermanbugzjfc/BackupMe/main/icon.png" height="128" width="128" align="left"></img></a><a href="https://poggit.pmmp.io/ci/Endermanbugzjfc/BackupMe/BackupMe/"><img src="https://poggit.pmmp.io/ci.shield/Endermanbugzjfc/BackupMe/~" align="left"></img></a><a href="https://github.com/Endermanbugzjfc/BackupMe/releases/latest/"><img src="https://img.shields.io/github/downloads/Endermanbugzjfc/BackupMe/total" align="left"></img></a><a href="https://github.com/Endermanbugzjfc/BackupMe/issues/"><img src="https://img.shields.io/github/issues/Endermanbugzjfc/BackupMe"></img></a></br>
 Implements the "Pterodactyl backup system" but can also backup your server without restarting it and mainly made for those who don't use Pterodactyl to use
 **This plugin implements a backup system that works like the "Pterodactyl backup system"**
 # Configuration
