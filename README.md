@@ -1,4 +1,5 @@
 # BackupMe
+<img src="https://raw.githubusercontent.com/Endermanbugzjfc/BackupMe/main/icon.png" height="128" width="128" align="left"></img><img src="https://poggit.pmmp.io/ci.shield/Endermanbugzjfc/BackupMe/~" align="left"></img><img src="https://img.shields.io/github/downloads/Endermanbugzjfc/BackupMe/total" align="left"><img src="https://img.shields.io/github/issues/Endermanbugzjfc/BackupMe"></br>
 Implements the "Pterodactyl backup system" but can also backup your server without restarting it and mainly made for those who don't use Pterodactyl to use
 **This plugin implements a backup system that works like the "Pterodactyl backup system"**
 # Configuration
@@ -11,6 +12,7 @@ Implements the "Pterodactyl backup system" but can also backup your server witho
 | `file-checker-interval` | The interval in seconds between every time the file checker checks if a `backup.me` is created. |
 | `ignore-disk-space` | Continue to do a server backup **even if the server disk is not having enough space.** |
 | `check-for-file` | File name for the file checker to check _(Default `backup.me`)_ |
+| `operation-log` | Will a debug log message be send when a file is added or ignored ***(This might cause a console spam!)*** |
 ## Available archiver formats
 | ID | **Format** |
 | -- | ------ |
@@ -32,13 +34,8 @@ Implements the "Pterodactyl backup system" but can also backup your server witho
 - `backup-{y}-{m}-{d} {h}-{i}-{s}.{format}`
 - `backup_my_server_{uuid}.{format}`
 - `backup {y}-{m}-{d} ({uuid}).{format}`
-## Smart ignore conditions
-| Target object | **Type** | Condition |
-| ------------- | -------- | --------- |
-| `/players/` | **Directory** | The save player data option is false in `pocketmine.yml` |
-| `/whitelist.txt` | **File** | The whitelist option is false in `server.properties` |
-| `/resource_packs/` | **Directory** | No valid resource packs is found in the resource stack |
 ## backupignore.gitignore
+**Backup ignore is only available on Linux servers at the moment!**
 You can input certain rules to prevent the backup archiver from adding that file to the backup archive file.
 
 **This file is using the [GitIgnore](https://git-scm.com/docs/gitignore) syntax**

@@ -66,6 +66,7 @@ class BackupRequestListener implements \pocketmine\event\Listener {
 		}
 		else $log->info('Disk space is enough for a backup (' . round($takes / 1024 / 1024 / 1024, 2) . ' GB' . ' out of ' . round($free / 1024 / 1024 / 1024, 2) . ' GB)');
 		$log->notice('Backup start now!');
+		$e->warning('The backup progress will take a while, do not shutdown the server!');
 		if (is_null($e->getBackupIgnoreContent()) and file_exists($this->ignorefilepath)) $e->setBackupIgnoreContent(Utils::filterIgnoreFileComments(file_get_contents($this->ignorefilepath)));
 		if (is_null($e->getFormat())) $e->setFormat($this->getFormat());
 		if (is_null($e->getName())) $e->setName($this->getName());

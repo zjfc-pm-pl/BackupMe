@@ -1,10 +1,10 @@
 name: BackupMe
 author: Endermanbugzjfc
-api: [3.0.0]
-version: 1.0.2
+api: 3.0.0
+version: 1.0.3
 main: Endermanbugzjfc\BackupMe\BackupMe
 description: Implements the "Pterodactyl backup system" but can also backup your server without restarting the server and for mainly made those who don't use Pterodactyl to use
-os: linux
+os: [linux, win]
 commands:
   backupme:
     description: Backup server

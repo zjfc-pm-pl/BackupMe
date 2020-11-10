@@ -21,7 +21,7 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\BackupMe;
 
-use pocketmine\{Server, Player, utils\TextFormat as TF};
+use pocketmine\{Server, Player, utils\TextFormat as TF, utils\Utils};
 
 use Endermanbugzjfc\BackupMe\libs\Inmarelibero\GitIgnoreChecker\GitIgnoreChecker;
 
@@ -57,7 +57,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$this->source = $source;
 		$this->format = $request->getFormat();
 		$this->ignore = $request->getBackupIgnoreContent();
-		$this->storeLocal($request);
+		$this->storeLocal([$request, BackupMe::getInstance()->allowOperationLog()]);
 		return;
 	}
 
@@ -89,7 +89,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		}
 		$this->publishProgress([self::PROGRESS_ARCHIVE_FILE_CREATED, $this->dest]);
 		$savedIgnores = self::cleanGitignore($this->source);
-		if (isset($this->ignore)) {
+		if (isset($this->ignore) and Utils::getOS() === Utils::OS_LINUX) {
 			@file_put_contents($this->source . '.gitignore', $this->ignore);
 			$ignore = (new GitIgnoreChecker($this->source));
 		}
@@ -141,7 +141,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	public function onCompletion(Server $server) : void {
 		$result = $this->getResult();
 		$fridge = $this->fetchLocal(); // Don't judge name lol
-		$e = $fridge;
+		$e = $fridge[0];
 		switch ((int)$result[0]) {
 			/*case self::RESULT_CANNOT_CREATE_ACHIVE_FILE:
 				$ero = @unserialize($result[1]);
@@ -187,14 +187,17 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 	}
 
 	public function onProgressUpdate(Server $server, $progress) : void {
-		$e = $this->fetchLocal();
+		$fridge = $this->fetchLocal();
+		$e = $fridge[0];
 		switch ((int)$progress[0]) {
 			case self::PROGRESS_FILE_ADDED:
+				if (!(bool)$fridge[1]) return;
 				if (($e instanceof events\BackupRequestByCommandEvent) and ($e->getSender() instanceof Player)) $e->getSender()->sendPopup(TF::BOLD . TF::GREEN . "File added: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
 				else $e->debug('Added file "' . (string)$progress[1] . '"');
 				break;
 
 			case self::PROGRESS_FILE_IGNORED:
+				if (!(bool)$fridge[1]) return;
 				if (($e instanceof events\BackupRequestByCommandEvent) and ($e->getSender() instanceof Player)) $e->getSender()->sendPopup(TF::BOLD . TF::RED . "File ignored: \n" . TF::RESET . TF::GOLD . (string)$progress[1]);
 				else $e->debug('File "' . (string)$progress[1] . '" was matching one or more rules inside the backup ignore file');
 				break;
@@ -205,7 +208,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 			case self::PROGRESS_COMPRESSING_ARCHIVE:
 				$e->info('Compressing backup archive file...');
-				$e->warning('This will take a while, do not shutdown the server!');
 				break;
 		}
 		return;
