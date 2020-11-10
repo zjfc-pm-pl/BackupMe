@@ -5,4 +5,5 @@ branches:
 projects:
   BackupMe:
     path: ""
+    icon: "icon.png"
 ...
