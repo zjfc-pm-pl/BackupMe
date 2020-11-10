@@ -209,7 +209,6 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 
 			case self::PROGRESS_COMPRESSING_ARCHIVE:
 				$e->info('Compressing backup archive file...');
-				$e->warning('This will take a while, do not shutdown the server!');
 				break;
 		}
 		return;

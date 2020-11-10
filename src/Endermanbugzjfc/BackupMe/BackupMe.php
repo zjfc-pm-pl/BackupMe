@@ -91,20 +91,13 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 
 	private function displayStartupLogs() : void {
 		$log = $this->getLogger();
-		$log->info('======= B A C K U P . M E =======');
-		$log->info('');
-		$log->info('Backup server by creating a "backup.me" file');
-		$log->info('Or use the "backupme" command');
-		$log->info('');
-		$log->debug('Plugin version: ' . $this->getDescription()->getVersion());
-		$log->debug('Plugin PHAR file hash: ' . ($this->isPhar() ? md5_file($this->getPharPath()) : 'UNKNOWN'));
-		$log->debug('');
-		$log->info('=================================');
+		$log->debug('Please provide the following information when creating an issue for this plugin (https://github.com/Endermanbugzjfc/BackupMe/issues) : Plugin PHAR file hash >> ' . ($this->isPhar() ? md5_file($this->getPharPath()) : 'UNKNOWN') . ' | ' . 'Plugin version >> ' . $this->getDescription()->getVersion());
 		return;
 	}
 
 	private function saveIgnoreFile() : void {
-		if (Utils::getOS() === Utils::OS_LINUX) if (file_exists($this->getDataFolder() . 'backupignore.gitignore')) return;
+		if (Utils::getOS() !== Utils::OS_LINUX) return;
+		if (file_exists($this->getDataFolder() . 'backupignore.gitignore')) return;
 		file_put_contents($this->getDataFolder() . 'backupignore.gitignore', join("\n", [
 			'# This file is using the gitignore syntax, enjoy!',
 			'# Specify filepatterns you want the backup file archiver to ignore.',
@@ -130,14 +123,14 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 	}
 
 	public function getPharPath() : string {
-		return $this->isPluginCompiled() ? substr($this->getFile(), 6, strlen(substr($this->getFile(), 6)) - 1) : $this->getFile();
+		return $this->isPluginCompiled() ? substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6), strlen(substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6))) - 1) : $this->getFile();
 	}
 
 	public function isPluginCompiled() : bool {
 		return $this->isPhar();
 	}
 	
-	public function allowOperationLog() : book {
+	public function allowOperationLog() : bool {
 		return (bool)$this->getConfig()->get('operation-log', false);
 	}
 	
