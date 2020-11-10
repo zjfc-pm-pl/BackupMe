@@ -1,6 +1,5 @@
 # BackupMe
-<img src="https://raw.githubusercontent.com/CortexPE/Commando/master/commando.png" height="512" width="512" align="left"></img>
-![BackupMe](https://raw.githubusercontent.com/Endermanbugzjfc/BackupMe/main/icon.png)
+<img src="https://raw.githubusercontent.com/Endermanbugzjfc/BackupMe/main/icon.png" height="512" width="512" align="left"></img>
 Implements the "Pterodactyl backup system" but can also backup your server without restarting it and mainly made for those who don't use Pterodactyl to use
 **This plugin implements a backup system that works like the "Pterodactyl backup system"**
 # Configuration
