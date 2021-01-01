@@ -57,7 +57,7 @@ class BackupArchiveAsyncTask extends \pocketmine\scheduler\AsyncTask {
 		$this->source = $source;
 		$this->format = $request->getFormat();
 		$this->ignore = $request->getBackupIgnoreContent();
-		$this->storeLocal([$request, BackupMe::getInstance()->allowOperationLog()]);
+		$this->storeLocal([$request, (bool)BackupMe::getInstance()->getConfig()->get('operation-log', false)]);
 		return;
 	}
 

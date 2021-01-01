@@ -29,20 +29,14 @@ class BackupAbortEvent extends BackupStopEvent {
 	public const REASON_CANNOT_CREATE_ACHIVE_FILE = 3;
 
 	protected $reason = 0;
-	protected $exception;
 
-	public function __construct(BackupRequest $e, int $reason, ?array $ero = null) {
+	public function __construct(BackupRequest $e, int $reason) {
 		parent::__construct($e, $reason, $ero ?? null);
 		$this->reason = $reason;
-		$this->exception = $ero;
 	}
 
 	public function getReason() : int {
 		return $this->reason;
-	}
-
-	public function getException() : ?array {
-		return $this->exception;
 	}
 
 }
