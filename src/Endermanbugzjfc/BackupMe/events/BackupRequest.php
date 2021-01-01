@@ -74,15 +74,5 @@ abstract class BackupRequest extends \pocketmine\event\plugin\PluginEvent implem
 		$this->format = $format;
 		return;
 	}
-	abstract public function getBackupMeFilePath() : ?string;
-	abstract public function emergency($message);
-	abstract public function alert($message);
-	abstract public function critical($message);
-	abstract public function error($message);
-	abstract public function warning($message);
-	abstract public function notice($message);
-	abstract public function info($message);
-	abstract public function debug($message);
-	abstract public function log($level, $message);
-	abstract public function logException(\Throwable $e, $trace = null);
+	
 }

@@ -24,7 +24,6 @@ namespace Endermanbugzjfc\BackupMe;
 use pocketmine\command\{Command, CommandSender};
 use pocketmine\utils\{TextFormat as TF, Utils};
 
-use function dirname;
 use function file_put_contents;
 use function file_exists;
 use function substr;
@@ -39,6 +38,8 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 	
 	private static $instance = null;
 
+	private $listener;
+
 	public function onLoad() : void {
 		self::$instance = $this;
 	}
@@ -46,21 +47,20 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 	public function onEnable() : void {
 
 		$log = $this->getLogger();
-		$log->debug('Please provide the following information when creating an issue for this plugin (https://github.com/Endermanbugzjfc/BackupMe/issues) : Plugin PHAR file hash >> ' . ($this->isPhar() ? md5_file($this->getPharPath()) : 'UNKNOWN') . ' | ' . 'Plugin version >> ' . $this->getDescription()->getVersion());
+		$log->debug('Please provide the following information when creating an issue for this plugin (https://github.com/Endermanbugzjfc/BackupMe/issues) : Plugin PHAR file hash >> ' . $this->getPharHash() . ' | ' . 'Plugin version >> ' . $this->getDescription()->getVersion());
 
 		$this->initConfig();
 
-		events\BackupRequestByCommandEvent::setBackupMePluginVersion($this);
-		$this->getServer()->getPluginManager()->registerEvents($listener = (new BackupRequestListener($this)), $this);
-		$checker = (new BackupMeFileCheckTask($this, $this->getServer()->getDataPath()));
-		$checker->setBackupMeFile($this->getConfig()->get('check-for-file', 'backup.me'));
-		$listener->setChecker($checker);
-		$listener->setSource((string)(/*$this->getConfig()->get('backup-inside', $this->getServer()->getDataPath())*/$this->getServer()->getDataPath()));
-		$listener->setDest((string)(/*$this->getConfig()->get('backup-into', $this->getServer()->getDataPath())*/$this->getServer()->getDataPath()));
-		$listener->setFormat((int)($this->getConfig()->get('archiver-format', BackupRequestListener::ARCHIVER_ZIP)));
-		$listener->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')));
-		$listener->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)));
-		$listener->setBackupIgnoreFilePath($this->getDataFolder() . 'backupignore.gitignore');
+		$this->getServer()->getPluginManager()->registerEvents($this->listener = (new BackupRequestListener($this)), $this);
+
+		$checker = new BackupMeFileCheckTask($this, $this->getServer()->getDataPath() . $this->getConfig()->get('check-for-file', 'backup.me'));
+		$this->listener->setChecker($checker);
+		$this->listener->setSource((string)(/*$this->getConfig()->get('backup-inside', $this->getServer()->getDataPath())*/$this->getServer()->getDataPath()));
+		$this->listener->setDest((string)(/*$this->getConfig()->get('backup-into', $this->getServer()->getDataPath())*/$this->getServer()->getDataPath()));
+		$this->listener->setFormat((int)($this->getConfig()->get('archiver-format', BackupRequestListener::ARCHIVER_ZIP)));
+		$this->listener->setName((string)($this->getConfig()->get('backup-name', 'backup-{y}-{m}-{d} {h}-{i}-{s}.{format}')));
+		$this->listener->setIgnoreDiskSpace((bool)($this->getConfig()->get('ignore-disk-space', false)));
+		$this->listener->setBackupIgnoreFilePath($this->getDataFolder() . 'backupignore.gitignore');
 		$this->getScheduler()->scheduleRepeatingTask($checker, (int)$this->getConfig()->get('file-checker-interval', 3) * 20);
 		return;
 	}
@@ -114,12 +114,9 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		return true;
 	}
 
-	private function getPharPath() : string {
-		return $this->isPluginCompiled() ? substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6), strlen(substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6))) - 1) : $this->getFile();
-	}
-
-	private function isPluginCompiled() : bool {
-		return $this->isPhar();
+	public function getPharHash() : string {
+		if (!$this->isPhar()) return 'UNKNOWN';
+		return substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6), strlen(substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6))) - 1);
 	}
 	
 	public static function getInstance() : ?self {

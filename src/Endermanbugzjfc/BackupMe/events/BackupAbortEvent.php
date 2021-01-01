@@ -31,7 +31,7 @@ class BackupAbortEvent extends BackupStopEvent {
 	protected $reason = 0;
 
 	public function __construct(BackupRequest $e, int $reason) {
-		parent::__construct($e, $reason, $ero ?? null);
+		parent::__construct($e, $reason);
 		$this->reason = $reason;
 	}
 
