@@ -30,8 +30,6 @@ use function substr;
 use function strlen;
 use function extension_loaded;
 
-use const DIRECTORY_SEPARATOR;
-
 final class BackupMe extends \pocketmine\plugin\PluginBase {
 
 	public const PREFIX = TF::BLUE . '[' . TF::BOLD . TF::DARK_AQUA . 'BackupMe' . TF::RESET . TF::BLUE  .']';
@@ -114,6 +112,10 @@ final class BackupMe extends \pocketmine\plugin\PluginBase {
 		return true;
 	}
 
+	/**
+	 * @internal
+	 * @return string
+	 */
 	public function getPharHash() : string {
 		if (!$this->isPhar()) return 'UNKNOWN';
 		return substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6), strlen(substr($this->getFile(), (Utils::getOS() === Utils::OS_WINDOWS ? 7 : 6))) - 1);

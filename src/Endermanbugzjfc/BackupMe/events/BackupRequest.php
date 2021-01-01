@@ -56,6 +56,12 @@ abstract class BackupRequest extends \pocketmine\event\plugin\PluginEvent implem
 		return $this->name;
 	}
 
+	/**
+	 * @see \Endermanbugzjfc\BackupMe\BackupRequestListener::ARCHIVER_ZIP
+	 * @see \Endermanbugzjfc\BackupMe\BackupRequestListener::ARCHIVER_TARGZ
+	 * @see \Endermanbugzjfc\BackupMe\BackupRequestListener::ARCHIVER_TARBZ2
+	 * @return int The number of archiver format
+	 */
 	public function getFormat() : ?int {
 		return $this->format;
 	}
@@ -70,6 +76,12 @@ abstract class BackupRequest extends \pocketmine\event\plugin\PluginEvent implem
 		return;
 	}
 	
+	/**
+	 * @see \Endermanbugzjfc\BackupMe\BackupRequestListener::ARCHIVER_ZIP
+	 * @see \Endermanbugzjfc\BackupMe\BackupRequestListener::ARCHIVER_TARGZ
+	 * @see \Endermanbugzjfc\BackupMe\BackupRequestListener::ARCHIVER_TARBZ2
+	 * @param int $format The number of archiver format
+	 */
 	public function setFormat(int $format) {
 		$this->format = $format;
 		return;

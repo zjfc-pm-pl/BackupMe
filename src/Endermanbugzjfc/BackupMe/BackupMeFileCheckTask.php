@@ -36,7 +36,7 @@ class BackupMeFileCheckTask {
 
 	final public function onRun(int $ct) : void {
 		if ($this->isPaused()) return;
-		if (!file_exists($file) return;
+		if (!file_exists($file)) return;
 		(new events\BackupRequestByPluginEvent(BackupMe::getInstance(), $file))->call();
 		return;
 	}
