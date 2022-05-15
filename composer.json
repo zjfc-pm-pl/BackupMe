@@ -2,7 +2,7 @@
   "name": "endermanbugzjfc/backupme",
   "type": "project",
   "require": {
-    "pocketmine/pocketmine-mp:^4"
+    "pocketmine/pocketmine-mp": "^4"
   },
   "require-dev": {},
   "autoload": {
